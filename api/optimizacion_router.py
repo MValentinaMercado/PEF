@@ -28,6 +28,9 @@ from api.pruebas_router import correr_pytest
 from rutas.procesos import ejecutar_modulo, entorno_cobertura, ruta_relativa
 
 OBJETIVOS = ("rutas", "api", "main.py")
+PRUEBA_LENTA = (
+    "tests/test_perfilado_lineas.py::test_scalene_real_perfila_el_proyecto"
+)
 REGLAS_RUFF = "F401,F811,F841,ERA001,SIM,C4,PIE"
 RANGO_MAXIMO_ACEPTADO = "B"  # complejidad ciclomática de 6 a 10
 PATRON_VULTURE = re.compile(
@@ -351,6 +354,11 @@ def _cobertura() -> dict:
     with estado.cerrojo_medicion, tempfile.TemporaryDirectory() as carpeta:
         informe = Path(carpeta) / "cobertura.json"
         proceso = correr_pytest(
+            # Scalene real tarda minutos (sobre todo en Windows) y solo
+            # aporta las líneas de perfilado_scalene, que otras pruebas ya
+            # cubren con simulaciones.
+            "--deselect",
+            PRUEBA_LENTA,
             "--cov",
             f"--cov-report=json:{informe}",
             entorno=entorno_cobertura(),

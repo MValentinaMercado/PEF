@@ -34,7 +34,7 @@ def ejecutar_experimento_cache(
     """
     grafo = generar_grafo(cantidad_nodos, semilla=5)
     unicos = generar_consultas(grafo, pares_distintos, semilla=1)
-    azar = random.Random(2)  # semilla fija: carga reproducible, no criptografía
+    azar = random.Random(2)  # semilla fija: no es criptografía
     carga = [azar.choice(unicos) for _ in range(total_consultas)]  # NOSONAR
 
     def sin_cache() -> None:

@@ -3,6 +3,7 @@
 import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
@@ -23,18 +24,31 @@ def ejecutar_modulo(
     >>> "Zen of Python" in ejecutar_modulo("this", tiempo=30).stdout
     True
     """
-    try:
-        return subprocess.run(
-            [sys.executable, "-m", modulo, *argumentos],
-            cwd=RAIZ,
-            env=entorno,
-            capture_output=True,
-            text=True,
-            timeout=tiempo,
-            check=False,
+    # La salida va a archivos temporales y no a tuberías: en Windows, si
+    # vence el tiempo, ``run`` solo mata al proceso hijo y quedaría esperando
+    # para siempre a que un proceso nieto (pytest, Scalene...) cierre la
+    # tubería. Con archivos no hay nada que esperar.
+    with (
+        tempfile.TemporaryFile("w+", errors="replace") as salida,
+        tempfile.TemporaryFile("w+", errors="replace") as errores,
+    ):
+        try:
+            proceso = subprocess.run(
+                [sys.executable, "-m", modulo, *argumentos],
+                cwd=RAIZ,
+                env=entorno,
+                stdout=salida,
+                stderr=errores,
+                timeout=tiempo,
+                check=False,
+            )
+        except subprocess.TimeoutExpired as error:
+            raise RuntimeError(f"{modulo} tardó demasiado.") from error
+        salida.seek(0)
+        errores.seek(0)
+        return subprocess.CompletedProcess(
+            proceso.args, proceso.returncode, salida.read(), errores.read()
         )
-    except subprocess.TimeoutExpired as error:
-        raise RuntimeError(f"{modulo} tardó demasiado.") from error
 
 
 def ruta_relativa(ruta: str) -> str:
