@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Planificador inteligente de rutas · Editor</title>
+    <link rel="stylesheet" href="/estatico/css/estilos.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Planificador inteligente de rutas</h1>
+      <nav>
+        <a class="activa" href="/">Editor</a>
+        <a href="/analisis">Análisis</a>
+        <a href="/optimizacion">Optimización</a>
+        <a href="/pruebas">Pruebas</a>
+        <a href="/calidad">Calidad</a>
+        <a href="/documentacion">Documentación</a>
+      </nav>
+    </header>
+    <main>
+      <section>
+        <h2 data-api="GET /api/grafo|POST /api/grafo/ejemplo">
+          Construí el grafo
+        </h2>
+        <div class="editor-toolbar">
+          <div
+            class="herramientas"
+            role="radiogroup"
+            aria-label="Herramientas de edición"
+          >
+            <label class="herramienta activa">
+              <input type="radio" name="modo" value="mover" checked />
+              <span
+                ><strong>Seleccionar</strong
+                ><small>Mover y elegir elementos</small></span
+              >
+            </label>
+            <label class="herramienta">
+              <input type="radio" name="modo" value="nodo" />
+              <span
+                ><strong>Nuevo nodo</strong
+                ><small>Hacé clic en el lienzo</small></span
+              >
+            </label>
+            <label class="herramienta">
+              <input type="radio" name="modo" value="arista" />
+              <span
+                ><strong>Conectar</strong><small>Elegí dos nodos</small></span
+              >
+            </label>
+          </div>
+          <div class="acciones-grafo" aria-label="Acciones sobre el grafo">
+            <button id="btn-editar" class="accion">Editar</button>
+            <button id="btn-eliminar" class="accion peligro">Eliminar</button>
+            <button id="btn-bloquear" class="accion">Bloquear conexión</button>
+            <span class="acciones-separador" aria-hidden="true"></span>
+            <button id="btn-ejemplo" class="accion secundario">
+              Cargar ejemplo
+            </button>
+            <button id="btn-limpiar" class="accion secundario">
+              Nuevo grafo
+            </button>
+          </div>
+        </div>
+        <svg
+          id="lienzo"
+          viewBox="0 0 800 400"
+          role="img"
+          aria-label="Grafo editable"
+        ></svg>
+        <p class="leyenda">
+          Verde = origen · Ámbar = destino · Rojo punteado = conexión bloqueada.
+        </p>
+        <p id="mensaje" class="estado" aria-live="polite"></p>
+      </section>
+
+      <section>
+        <h2 data-api="POST /api/rutas" data-body='{"origen":"A","destino":"F"}'>
+          Encontrá la mejor ruta
+        </h2>
+        <div class="barra">
+          <label
+            >Origen
+            <select id="origen"></select
+          ></label>
+          <label
+            >Destino
+            <select id="destino"></select
+          ></label>
+          <label
+            ><input type="checkbox" class="alg" value="BFS" checked />
+            BFS</label
+          >
+          <label
+            ><input type="checkbox" class="alg" value="Dijkstra" checked />
+            Dijkstra</label
+          >
+          <label
+            ><input type="checkbox" class="alg" value="A*" checked /> A*</label
+          >
+          <button id="btn-ejecutar" class="principal">Ejecutar</button>
+        </div>
+        <div class="tabla-scroll">
+          <table id="tabla-resultados">
+            <thead>
+              <tr>
+                <th>Algoritmo</th>
+                <th>Ruta encontrada</th>
+                <th>Distancia total</th>
+                <th>Tiempo (ms)</th>
+                <th>Memoria utilizada</th>
+                <th>Nodos explorados</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="panel-grafico">
+          <h3
+            data-api="POST /api/rutas"
+            data-body='{"origen":"A","destino":"F"}'
+          >
+            Tiempo de ejecución
+          </h3>
+          <div id="grafico-rutas" aria-live="polite">
+            <p class="nota">Ejecutá una búsqueda para generar el gráfico.</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2 data-api="GET /api/informacion">Referencia de algoritmos</h2>
+        <div class="tabla-scroll">
+          <table id="tabla-info">
+            <thead>
+              <tr>
+                <th>Algoritmo</th>
+                <th>Estructuras utilizadas</th>
+                <th>Funcionamiento</th>
+                <th>Complejidad temporal</th>
+                <th>Complejidad espacial</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="nota">V = cantidad de nodos, E = cantidad de aristas.</p>
+      </section>
+    </main>
+    <dialog id="dialogo">
+      <form method="dialog" id="form-dialogo">
+        <label id="dialogo-etiqueta"
+          >Valor <input id="dialogo-campo" required
+        /></label>
+        <menu>
+          <button value="cancelar" formnovalidate>Cancelar</button>
+          <button value="ok" class="principal">Aceptar</button>
+        </menu>
+      </form>
+    </dialog>
+    <script src="/estatico/js/comun.js"></script>
+    <script src="/estatico/js/editor.js"></script>
+  </body>
+</html>

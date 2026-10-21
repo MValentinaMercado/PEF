@@ -1,0 +1,46 @@
+# Configuración de calidad del proyecto (la usan Ruff, coverage y el pipeline).
+
+[tool.ruff]
+line-length = 79
+target-version = "py312"
+extend-exclude = ["docs/_build", "perfiles"]
+
+[tool.ruff.lint]
+# E/W: estilo pycodestyle · F: errores (imports sin usar, nombres) · I: orden de imports
+# B: bugs probables · UP: sintaxis moderna · C4: comprensiones · SIM: simplificaciones
+# C90: complejidad ciclomática · ERA: código comentado
+select = ["E", "F", "W", "I", "B", "UP", "C4", "SIM", "C90", "ERA"]
+# UP047: la sintaxis genérica PEP 695 es solo estética; se mantiene TypeVar.
+ignore = ["UP047"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B011"]
+# La lista blanca de Vulture son expresiones sueltas a propósito.
+"vulture_lista_blanca.py" = ["B018"]
+
+[tool.coverage.run]
+source = ["rutas", "api"]
+
+[tool.coverage.report]
+# Umbral mínimo de cobertura: si baja de aquí, el pipeline falla.
+fail_under = 80
+show_missing = true
+
+[tool.mypy]
+# Tipado estricto en funciones: toda función debe declarar tipos.
+python_version = "3.12"
+disallow_untyped_defs = true
+ignore_missing_imports = true
+files = ["rutas", "api", "main.py"]
+
+[tool.vulture]
+# Código muerto: la ventana Optimización y el pipeline usan esta configuración.
+paths = ["rutas", "api", "main.py", "vulture_lista_blanca.py"]
+min_confidence = 60
+# Las rutas de FastAPI y los validadores de pydantic se invocan por decorador:
+# nadie las llama por nombre, pero no son código muerto.
+ignore_decorators = ["@router.*", "@app.*", "@classmethod", "@field_validator"]
+ignore_names = ["cls"]

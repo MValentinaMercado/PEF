@@ -1,0 +1,40 @@
+/* Tema oscuro para la documentación (sobre alabaster). */
+body, div.document, div.body { background: #101419; color: #edf1f5; }
+div.body { max-width: none; }
+div.sphinxsidebar, div.sphinxsidebar h3, div.sphinxsidebar h4,
+div.sphinxsidebar p, div.sphinxsidebar ul, div.sphinxsidebar a,
+div.sphinxsidebar p.caption, div.sphinxsidebar h3 a { color: #c4ccd5; }
+div.sphinxsidebar a { border-bottom: none; }
+div.sphinxsidebar a:hover { color: #9fc1ed; border-bottom: 1px solid #9fc1ed; }
+div.sphinxsidebar input { background: #1c232b; color: #edf1f5; border: 1px solid #303943; border-radius: 9px; }
+a, a:visited { color: #79a8e5; border-bottom: 1px dotted #79a8e5; }
+a:hover { color: #9fc1ed; border-bottom: 1px solid #9fc1ed; }
+div.body h1, div.body h2, div.body h3, div.body h4, div.body h5 { color: #edf1f5; }
+div.body h1, div.body h2 { border-bottom: 1px solid #303943; }
+hr { border-color: #303943; }
+code, tt, code.literal, pre {
+  background: #1c232b; color: #9fc1ed; border-radius: 6px;
+}
+pre { padding: 10px 14px; border: 1px solid #262e37; border-radius: 10px; }
+div.highlight, div.highlight pre { background: #1c232b; color: #dfe6ee; }
+div.highlight .c, div.highlight .c1, div.highlight .cm { color: #7f8b98; }
+div.highlight .k, div.highlight .kn, div.highlight .kd { color: #c792ea; }
+div.highlight .s, div.highlight .s1, div.highlight .s2 { color: #a5d6a7; }
+div.highlight .nf, div.highlight .nc { color: #82aaff; }
+div.highlight .mi, div.highlight .mf { color: #f78c6c; }
+table.docutils, table.docutils td, table.docutils th {
+  border-color: #303943; color: #edf1f5;
+}
+table.docutils th { background: #1c232b; }
+table.docutils { border-collapse: separate; border-spacing: 0; border: 1px solid #303943; border-radius: 10px; overflow: hidden; }
+div.admonition, div.note, div.warning {
+  background: #1c232b; border: 1px solid #303943; border-radius: 10px; color: #edf1f5;
+}
+div.admonition p.admonition-title { color: #9fc1ed; }
+dl.py dt, dt.sig { background: #1c232b; border-radius: 8px; color: #edf1f5; }
+dl.field-list > dt { color: #9ba6b2; }
+em.property, .sig-prename, .sig-name, .sig-paren { color: #edf1f5; }
+div.footer, div.footer a { color: #9ba6b2; }
+div.related, div.related a { color: #9ba6b2; }
+.viewcode-link { color: #9ba6b2; }
+::selection { background: #1c2b40; }

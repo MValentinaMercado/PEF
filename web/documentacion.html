@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Planificador inteligente de rutas · Documentación</title>
+  <link rel="stylesheet" href="/estatico/css/estilos.css">
+</head>
+<body>
+<header>
+  <h1>Planificador inteligente de rutas</h1>
+  <nav>
+    <a href="/">Editor</a>
+    <a href="/analisis">Análisis</a>
+    <a href="/optimizacion">Optimización</a>
+    <a href="/pruebas">Pruebas</a>
+    <a href="/calidad">Calidad</a>
+    <a class="activa" href="/documentacion">Documentación</a>
+  </nav>
+</header>
+<main>
+  <section>
+    <h2 data-api="GET /api/documentacion/estado|POST /api/documentacion/generar" data-cmd="python -m sphinx -b html docs docs/_build/html">Documentación técnica</h2>
+    <p>
+      La documentación técnica se genera automáticamente a partir de los
+      <em>docstrings</em> del código fuente con <code>Sphinx</code> y la extensión
+      <code>sphinx.ext.autodoc</code>, que extrae la información de módulos, clases y
+      funciones.
+    </p>
+    <div class="barra">
+      <button id="btn-generar">Regenerar documentación</button>
+      <a id="enlace-nueva" href="/sphinx/index.html" target="_blank"
+         rel="noopener">Abrir en una pestaña nueva</a>
+      <span class="estado" id="estado-docs"></span>
+    </div>
+    <iframe id="marco-docs" title="Documentación Sphinx"
+            src="/sphinx/index.html"></iframe>
+  </section>
+</main>
+<script src="/estatico/js/comun.js"></script>
+<script>
+const el = id => document.getElementById(id);
+const marco = el("marco-docs"), estado = el("estado-docs");
+
+function mostrarEstado(datos) {
+  estado.className = "estado";
+  estado.textContent = datos.disponible
+    ? "Generada el " + datos.generada : "Todavía no está generada.";
+  marco.hidden = !datos.disponible;
+}
+
+el("btn-generar").addEventListener("click", async evento => {
+  const boton = evento.currentTarget;
+  boton.disabled = true;
+  estado.textContent = "Generando con Sphinx…";
+  try {
+    mostrarEstado(await api("POST", "/api/documentacion/generar"));
+    marco.src = "/sphinx/index.html?r=" + Date.now();
+  } catch (error) {
+    estado.className = "estado error";
+    estado.textContent = error.message;
+  }
+  boton.disabled = false;
+});
+
+api("GET", "/api/documentacion/estado").then(mostrarEstado);
+</script>
+</body>
+</html>

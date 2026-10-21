@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Planificador inteligente de rutas · Optimización</title>
+    <link rel="stylesheet" href="/estatico/css/estilos.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Planificador inteligente de rutas</h1>
+      <nav>
+        <a href="/">Editor</a>
+        <a href="/analisis">Análisis</a>
+        <a class="activa" href="/optimizacion">Optimización</a>
+        <a href="/pruebas">Pruebas</a>
+        <a href="/calidad">Calidad</a>
+        <a href="/documentacion">Documentación</a>
+      </nav>
+    </header>
+    <main>
+      <section>
+        <h2 data-cmd="pytest tests/test_algoritmos.py -q|pytest -q">
+          Código redundante eliminado
+        </h2>
+
+        <div class="tabla-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Redundancia</th>
+                <th>Versión inicial</th>
+                <th>Versión final</th>
+                <th>Qué se evita</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Lista de nodos recreada en cada vuelta</td>
+                <td>
+                  <code>dijkstra_lista</code> llamaba a
+                  <code>grafo.estaciones()</code> en la condición del
+                  <code>while</code> y en el <code>for</code> de cada iteración.
+                  Con 200 nodos se hicieron 212 llamadas y cada una copiaba la
+                  lista completa.
+                </td>
+                <td>
+                  No se vuelve a listar el grafo: en cada paso solo se miran los
+                  vecinos del nodo actual.
+                </td>
+                <td>
+                  Copias de tamaño O(V) en cada iteración que no aportaban
+                  información.
+                </td>
+              </tr>
+              <tr>
+                <td>Dos estructuras para lo mismo</td>
+                <td>
+                  BFS guardaba <code>visitados</code> (un <code>set</code>) y
+                  <code>anteriores</code> (un <code>dict</code>) y actualizaba
+                  ambos por cada nodo.
+                </td>
+                <td>
+                  Solo <code>anterior</code>: que un nodo esté como clave ya
+                  significa que fue descubierto.
+                </td>
+                <td>Una estructura menos y una escritura menos por nodo.</td>
+              </tr>
+              <tr>
+                <td>Comprobación que no cambia el resultado</td>
+                <td>
+                  Dijkstra verificaba
+                  <code>if vecino in visitados: continue</code> antes de
+                  comparar distancias.
+                </td>
+                <td>
+                  Se eliminó; alcanza con comparar <code>nuevo_costo</code> con
+                  el costo conocido.
+                </td>
+                <td>
+                  Con pesos no negativos, un nodo ya cerrado tiene su distancia
+                  mínima, así que la comparación nunca se cumpliría para él: el
+                  filtro no aportaba nada.
+                </td>
+              </tr>
+              <tr>
+                <td>Inicialización total de las tablas</td>
+                <td>
+                  Distancias y predecesores se llenaban con infinito y
+                  <code>None</code> para todas las estaciones antes de empezar
+                  (dos recorridos completos).
+                </td>
+                <td>
+                  Los diccionarios solo contienen los nodos alcanzados; lo que
+                  falta se consulta con
+                  <code>costo.get(vecino, math.inf)</code>.
+                </td>
+                <td>
+                  Trabajo y memoria proporcionales a lo explorado y no al tamaño
+                  del grafo, ya que la búsqueda se detiene al llegar al destino.
+                </td>
+              </tr>
+              <tr>
+                <td>Reconstrucción de la ruta duplicada</td>
+                <td>
+                  <code>_reconstruir_camino</code> estaba copiada en
+                  <code>bfs.py</code> y en <code>dijkstra.py</code>, con
+                  comprobaciones distintas. En BFS la verificación final de que
+                  el camino empieza en el origen no podía fallar después de
+                  comprobar que el destino había sido alcanzado.
+                </td>
+                <td>
+                  Una única función <code>reconstruir_ruta</code> en
+                  <code>comunes.py</code>, que se llama solo cuando el destino
+                  fue alcanzado y por eso no necesita verificaciones.
+                </td>
+                <td>
+                  Dos copias que mantener y controles que no podían dar un
+                  resultado distinto.
+                </td>
+              </tr>
+              <tr>
+                <td>Variantes casi idénticas</td>
+                <td>
+                  <code>bfs_lista</code> y <code>bfs_deque</code> eran iguales
+                  salvo por la cola; <code>dijkstra_lista</code> y
+                  <code>dijkstra_heap</code> compartían preparación y cierre.
+                </td>
+                <td>
+                  Una implementación por algoritmo, la eficiente:
+                  <code>deque</code> en BFS y <code>heapq</code> en Dijkstra.
+                </td>
+                <td>
+                  Cuerpos duplicados que había que corregir dos veces. Las
+                  variantes con lista servían para comparar; en la versión final
+                  solo se conserva la eficiente.
+                </td>
+              </tr>
+              <tr>
+                <td>Perfilado copiado y pegado</td>
+                <td>
+                  <code>comparar_perfilado_dijkstra</code> y
+                  <code>comparar_perfilado_bfs</code>, más cuatro bloques
+                  repetidos en <code>main.py</code> (encabezado impreso y
+                  llamada a <code>perfilar_tiempo</code>).
+                </td>
+                <td>
+                  Una función <code>perfilar_algoritmo</code> y un bucle sobre
+                  el registro <code>ALGORITMOS</code>.
+                </td>
+                <td>
+                  Agregar A* no obligó a escribir otro bloque de perfilado.
+                </td>
+              </tr>
+              <tr>
+                <td>Medición repetida</td>
+                <td>
+                  El tiempo se medía en tres lugares (<code
+                    >medir_tiempo_ms</code
+                  >
+                  en <code>grafico.py</code>, <code>_medir</code> en
+                  <code>tabla.py</code> y bloques <code>perf_counter</code> en
+                  <code>main.py</code>) y la memoria se leía con dos funciones
+                  equivalentes.
+                </td>
+                <td>
+                  Un solo módulo, <code>mediciones.py</code>, usado por todos
+                  los experimentos.
+                </td>
+                <td>Criterios de medición distintos según dónde se midiera.</td>
+              </tr>
+              <tr>
+                <td>Bucle principal repetido en Dijkstra y A*</td>
+                <td>
+                  Los dos tenían el mismo bucle (extraer del heap, ignorar
+                  entradas viejas, relajar vecinos); Pylint lo detectó como
+                  bloque repetido.
+                </td>
+                <td>
+                  Un solo <code>buscar_con_heap()</code> en
+                  <code>comunes.py</code>; A* le pasa su heurística y Dijkstra
+                  no.
+                </td>
+                <td>
+                  Corregir dos veces cada cambio. Medido: Dijkstra queda dentro
+                  del ruido (±3 %) de la versión duplicada.
+                </td>
+              </tr>
+              <tr>
+                <td>Código muerto</td>
+                <td>
+                  En <code>paralelismo()</code> de <code>main.py</code> se
+                  calculaba <code>m_paralelo</code> y nunca se usaba.
+                </td>
+                <td>Eliminado.</td>
+                <td>Una lectura de memoria sin ningún efecto.</td>
+              </tr>
+              <tr>
+                <td>Entradas de caché que no se pueden reutilizar</td>
+                <td>
+                  La clave incluía <code>grafo.version</code>, de modo que las
+                  rutas de versiones anteriores se quedaban guardadas para
+                  siempre aunque ya no pudieran volver a consultarse.
+                </td>
+                <td>
+                  La caché se vacía cuando detecta que el grafo cambió y tiene
+                  un tope de 2.048 entradas.
+                </td>
+                <td>Memoria ocupada por resultados obsoletos.</td>
+              </tr>
+              <tr>
+                <td>Generación de grafos</td>
+                <td>
+                  Se sorteaba cada par de nodos (unos 2 millones de sorteos con
+                  2.000 nodos), se copiaba la lista con
+                  <code>nombres[i + 1:]</code> en cada vuelta y se fijaba la
+                  semilla global del módulo <code>random</code>.
+                </td>
+                <td>
+                  Cada nodo se conecta con los tres siguientes (unas 6.000
+                  conexiones con 2.000 nodos) y el azar sale de un generador
+                  propio, <code>random.Random(semilla)</code>.
+                </td>
+                <td>
+                  Un costo cuadrático en la preparación de cada experimento y un
+                  efecto colateral sobre el azar de todo el programa.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Qué se conservó</h3>
+        <p class="nota">
+          La comprobación <code>if actual in cerrados</code> al sacar un nodo
+          del heap es necesaria: el heap puede contener varias entradas del
+          mismo nodo con distintos costos y esa comprobación descarta las
+          antiguas (borrado perezoso). Además, el tiempo y la memoria se miden
+          en dos corridas separadas de la misma consulta, porque
+          <code>tracemalloc</code>
+          enlentece la ejecución y falsearía el tiempo.
+        </p>
+        <p class="nota">
+          Para asegurar que quitar código no cambió el comportamiento, las
+          <a href="/pruebas">pruebas</a>
+          comprueban, entre otras cosas, que A* y Dijkstra devuelven la misma
+          distancia en cada consulta.
+        </p>
+      </section>
+
+      <section>
+        <h2 data-api="POST /api/optimizacion/ruff|POST /api/optimizacion/vulture|POST /api/optimizacion/pylint|POST /api/optimizacion/radon|POST /api/optimizacion/cobertura">
+          Herramientas de limpieza
+        </h2>
+        <p>
+          Además de las mejoras ya hechas, cinco herramientas buscan lo que
+          todavía se puede eliminar o simplificar. Cada una mira el código
+          desde un ángulo distinto, por eso se usan juntas. El criterio de
+          cada una está debajo de su título.
+        </p>
+        <div class="barra">
+          <button class="principal" id="btn-limpieza">Volver a analizar</button>
+          <span class="estado" id="estado-limpieza"></span>
+        </div>
+
+        <h3 data-api="POST /api/optimizacion/ruff" data-cmd="ruff check . --select F401,F811,F841,ERA001,SIM,C4,PIE">
+          Ruff: imports, variables y código comentado sin uso
+        </h3>
+        <p class="nota">Detecta imports y variables sin usar, redefiniciones, código comentado y construcciones que se pueden simplificar.</p>
+        <div class="resumen" id="res-ruff"></div>
+        <p id="criterio-ruff"></p>
+        <div class="tabla-scroll">
+          <table id="tabla-ruff">
+            <thead>
+              <tr>
+                <th>Archivo</th>
+                <th>Línea</th>
+                <th>Regla</th>
+                <th>Detalle</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <h3 data-api="POST /api/optimizacion/vulture" data-cmd="vulture">
+          Vulture: código muerto
+        </h3>
+        <p class="nota">Busca funciones, clases y variables que nadie usa. Las rutas de FastAPI y los validadores de pydantic se excluyen por decorador, y los campos de las filas de resultados están en <code>vulture_lista_blanca.py</code> (configuración en <code>pyproject.toml</code>).</p>
+        <div class="resumen" id="res-vulture"></div>
+        <p id="criterio-vulture"></p>
+        <div class="tabla-scroll">
+          <table id="tabla-vulture">
+            <thead>
+              <tr>
+                <th>Archivo</th>
+                <th>Línea</th>
+                <th>Confianza</th>
+                <th>Elemento</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <h3 data-api="POST /api/optimizacion/pylint" data-cmd="pylint rutas api main.py --disable=all --enable=duplicate-code">
+          Pylint: bloques de código repetidos
+        </h3>
+        <p class="nota">Solo se activa la regla <code>duplicate-code</code> (R0801): señala el mismo bloque en dos archivos, candidato a unificarse en una función.</p>
+        <div class="resumen" id="res-pylint"></div>
+        <p id="criterio-pylint"></p>
+        <div class="tabla-scroll">
+          <table id="tabla-pylint">
+            <thead>
+              <tr>
+                <th>Archivo</th>
+                <th>Línea</th>
+                <th>Regla</th>
+                <th>Detalle</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <h3 data-api="POST /api/optimizacion/radon" data-cmd="radon cc rutas api main.py -s -a|radon mi rutas api main.py -s">
+          Radon: complejidad y mantenibilidad
+        </h3>
+        <p class="nota">Mide la complejidad ciclomática de cada función (cantidad de caminos posibles) y el índice de mantenibilidad de cada archivo. La tabla muestra las cinco funciones más complejas.</p>
+        <div class="resumen" id="res-radon"></div>
+        <p id="criterio-radon"></p>
+        <div class="tabla-scroll">
+          <table id="tabla-radon">
+            <thead>
+              <tr>
+                <th>Archivo</th>
+                <th>Línea</th>
+                <th>Rango (complejidad)</th>
+                <th>Función</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <h3 data-api="POST /api/optimizacion/cobertura" data-cmd="pytest --cov --cov-report=term-missing">
+          coverage: líneas que ninguna prueba ejecuta
+        </h3>
+        <p class="nota">Una línea que ninguna prueba ejecuta puede ser código muerto o estar sin probar. Es informativo: hay que revisar cada tramo.</p>
+        <div class="resumen" id="res-cobertura"></div>
+        <p id="criterio-cobertura"></p>
+        <div class="tabla-scroll">
+          <table id="tabla-cobertura">
+            <thead>
+              <tr>
+                <th>Archivo</th>
+                <th>Línea</th>
+                <th>Tipo</th>
+                <th>Tramo</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section>
+        <h2 data-cmd="ruff check .|pytest -q">Refactorización</h2>
+        <div class="tabla-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Aspecto</th>
+                <th>Versión inicial</th>
+                <th>Versión final</th>
+                <th>Beneficio</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Organización</td>
+                <td>
+                  Diez archivos sueltos en una carpeta, que se importaban por
+                  nombre (<code>from dijkstra import ...</code>).
+                </td>
+                <td>
+                  Paquetes con una responsabilidad clara cada uno:
+                  <code>rutas</code> (lógica), <code>rutas/algoritmos</code>,
+                  <code>api</code> (servicio web), <code>web</code> (pantallas),
+                  <code>tests</code> y <code>docs</code>.
+                </td>
+                <td>
+                  Se encuentra cada cosa en un lugar previsible y la lógica no
+                  depende de la interfaz.
+                </td>
+              </tr>
+              <tr>
+                <td>Resultado de los algoritmos</td>
+                <td>
+                  BFS devolvía <code>(saltos, camino)</code> y Dijkstra
+                  <code>(distancia, camino)</code>, con significados distintos
+                  para el primer valor.
+                </td>
+                <td>
+                  Todos devuelven <code>ResultadoBusqueda</code> con ruta,
+                  distancia y nodos explorados.
+                </td>
+                <td>
+                  Quien llama no necesita saber qué algoritmo usó para
+                  interpretar la respuesta.
+                </td>
+              </tr>
+              <tr>
+                <td>Elección del algoritmo</td>
+                <td>Cada función se importaba y llamaba por su nombre.</td>
+                <td>
+                  El registro <code>ALGORITMOS</code> asocia nombre y función, y
+                  todos comparten la misma firma.
+                </td>
+                <td>
+                  Sumar A* no obligó a modificar la caché, el benchmark ni el
+                  perfilado: se recorre el registro.
+                </td>
+              </tr>
+              <tr>
+                <td>Cálculo, impresión y gráficos</td>
+                <td>
+                  <code>main.py</code> (315 líneas) calculaba, imprimía con
+                  <code>print</code> y dibujaba con <code>matplotlib</code> en
+                  las mismas funciones.
+                </td>
+                <td>
+                  Las funciones devuelven datos (<code>FilaBenchmark</code>,
+                  <code>FilaConcurrencia</code>, <code>ResultadoCache</code>,
+                  <code>FilaPerfil</code>) y la presentación queda en
+                  <code>api</code> y <code>web</code>.
+                </td>
+                <td>
+                  El mismo resultado se puede mostrar en pantalla, probar con
+                  <code>pytest</code> o documentar.
+                </td>
+              </tr>
+              <tr>
+                <td>Grafo</td>
+                <td>
+                  Clase de 43 líneas: <code>conexiones</code>,
+                  <code>estaciones()</code> y <code>agregar_ruta</code>, que
+                  creaba los nodos que faltaban sin avisar.
+                </td>
+                <td>
+                  <code>adyacencia</code>, <code>nodos()</code> y
+                  <code>conectar</code>, que solo une nodos existentes y rechaza
+                  un nodo consigo mismo. Se agregaron posiciones, bloqueo de
+                  conexiones, renombrar y eliminar, con anotaciones de tipos y
+                  ejemplos verificables.
+                </td>
+                <td>
+                  Nombres que describen la estructura y un grafo que no se puede
+                  dejar en un estado inconsistente por un error de tipeo.
+                </td>
+              </tr>
+              <tr>
+                <td>Caché</td>
+                <td>
+                  Usaba siempre <code>dijkstra_heap</code>, el contador de
+                  versión formaba parte de la clave y las estadísticas se pedían
+                  con un método.
+                </td>
+                <td>
+                  El algoritmo se elige al crearla, la clave es solo
+                  <code>(origen, destino)</code> y la versión se compara para
+                  invalidar. Los contadores (<code>aciertos</code>,
+                  <code>fallos</code>, <code>invalidaciones</code>) son
+                  atributos.
+                </td>
+                <td>
+                  Una caché reutilizable con cualquier algoritmo y con
+                  comportamiento medible.
+                </td>
+              </tr>
+              <tr>
+                <td>Mediciones</td>
+                <td>
+                  Tiempo con <code>perf_counter</code> y memoria como RSS del
+                  proceso, un valor acumulado de todo el programa que no se
+                  puede atribuir a una función.
+                </td>
+                <td>
+                  <code>mediciones.py</code> mide el tiempo y el pico de memoria
+                  de cada consulta con <code>tracemalloc</code>.
+                </td>
+                <td>
+                  La memoria que se informa pertenece a la operación medida y no
+                  al proceso entero.
+                </td>
+              </tr>
+              <tr>
+                <td>Concurrencia</td>
+                <td>
+                  <code>paralelismo.py</code> comparaba secuencial contra
+                  procesos.
+                </td>
+                <td>
+                  <code>concurrencia.py</code> compara secuencial, hilos y
+                  procesos, y reparte las consultas en lotes de 10.
+                </td>
+                <td>
+                  Permite explicar con datos por qué los hilos no aceleran
+                  trabajo de CPU en Python.
+                </td>
+              </tr>
+              <tr>
+                <td>Constantes</td>
+                <td>
+                  Valores como 20, 60, 120, 200 o 0.15 escritos directamente en
+                  el código.
+                </td>
+                <td>
+                  Constantes con nombre: <code>TAMANOS_GRAFO</code>,
+                  <code>CONSULTAS_POR_TAMANO</code>, <code>TAMANO_LOTE</code>,
+                  <code>LADO_MAPA</code>, <code>BYTES_POR_KB</code>.
+                </td>
+                <td>
+                  Cambiar un parámetro del experimento es modificar una línea
+                  con un nombre claro.
+                </td>
+              </tr>
+              <tr>
+                <td>Documentación y pruebas</td>
+                <td>
+                  Docstrings en solo algunas funciones y verificación manual al
+                  ejecutar <code>main.py</code>.
+                </td>
+                <td>
+                  Docstrings con la complejidad de cada algoritmo, ejemplos
+                  verificables con <code>doctest</code>, documentación generada
+                  con Sphinx y una suite de <code>pytest</code>.
+                </td>
+                <td>
+                  Cada refactorización se puede comprobar ejecutando las
+                  pruebas.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section>
+        <h2>Criterio para optimizar</h2>
+        <p>
+          Una optimización solo vale la pena cuando una medición muestra un
+          problema real. Se parte de una versión clara y correcta, se mide con
+          <code>cProfile</code> dónde está el costo, se mejora esa parte y se
+          vuelve a medir. Así se comparó, en la versión inicial, la
+          implementación con lista contra la mejorada con <code>deque</code> en
+          BFS y con heap en Dijkstra; en la versión final.
+        </p>
+        <h3>Decisiones de no optimizar</h3>
+        <p class="nota">
+          La búsqueda de una sola ruta no se paraleliza: la medición de
+          concurrencia muestra que los hilos no aceleran trabajo de CPU por el
+          GIL y que los procesos pagan un costo de arranque y de copia del
+          grafo, y solo pueden ganar con varios núcleos libres, por lo que
+          conviene reservarlos para repartir muchas consultas.
+        </p>
+      </section>
+    </main>
+    <script src="/estatico/js/comun.js"></script>
+    <script src="/estatico/js/optimizacion.js"></script>
+  </body>
+</html>

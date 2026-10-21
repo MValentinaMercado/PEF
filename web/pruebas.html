@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Planificador inteligente de rutas · Pruebas</title>
+    <link rel="stylesheet" href="/estatico/css/estilos.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Planificador inteligente de rutas</h1>
+      <nav>
+        <a href="/">Editor</a>
+        <a href="/analisis">Análisis</a>
+        <a href="/optimizacion">Optimización</a>
+        <a class="activa" href="/pruebas">Pruebas</a>
+        <a href="/calidad">Calidad</a>
+        <a href="/documentacion">Documentación</a>
+      </nav>
+    </header>
+    <main>
+      <section>
+        <h2 data-api="POST /api/pruebas/ejecutar" data-cmd="pytest -q">
+          Pruebas del proyecto
+        </h2>
+        <p>
+          Se ejecutan las pruebas de todo el proyecto con <code>pytest</code>.
+          Se combinan <code>unittest</code> para unidades individuales,
+          <code>pytest</code> con fixtures (incluye pruebas de la API con
+          <code>TestClient</code>), <code>doctest</code> para verificar los
+          ejemplos de los docstrings y <code>timeit</code> para medir y comparar
+          el rendimiento de ciertas operaciones.
+        </p>
+        <div class="barra">
+          <button class="principal" id="btn-pruebas">
+            Volver a ejecutar las pruebas
+          </button>
+          <span class="estado" id="estado-pruebas"></span>
+        </div>
+        <div class="resumen" id="resumen"></div>
+        <div class="tabla-scroll">
+          <table id="tabla-tipos">
+            <thead>
+              <tr>
+                <th>Tipo</th>
+                <th>Total</th>
+                <th>Aprobadas</th>
+                <th>No aprobadas</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <h3 data-api="POST /api/pruebas/ejecutar" data-cmd="pytest -v">
+          Detalle
+        </h3>
+        <div class="barra">
+          <label
+            >Tipo
+            <select id="filtro-tipo">
+              <option value="">Todos</option>
+            </select></label
+          >
+          <label
+            ><input type="checkbox" id="solo-fallas" /> Solo las que no
+            pasaron</label
+          >
+        </div>
+        <div class="tabla-scroll">
+          <table id="tabla-pruebas">
+            <thead>
+              <tr>
+                <th>Tipo</th>
+                <th>Grupo</th>
+                <th>Prueba</th>
+                <th>Resultado</th>
+                <th>Tiempo (s)</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <h3 data-api="POST /api/pruebas/ejecutar" data-cmd="pytest -q">
+          Salida de pytest
+        </h3>
+        <pre id="salida"></pre>
+      </section>
+    </main>
+    <script src="/estatico/js/comun.js"></script>
+    <script src="/estatico/js/pruebas.js"></script>
+  </body>
+</html>

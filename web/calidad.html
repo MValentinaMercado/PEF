@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Planificador inteligente de rutas · Calidad</title>
+    <link rel="stylesheet" href="/estatico/css/estilos.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Planificador inteligente de rutas</h1>
+      <nav>
+        <a href="/">Editor</a>
+        <a href="/analisis">Análisis</a>
+        <a href="/optimizacion">Optimización</a>
+        <a href="/pruebas">Pruebas</a>
+        <a class="activa" href="/calidad">Calidad</a>
+        <a href="/documentacion">Documentación</a>
+      </nav>
+    </header>
+    <main>
+      <section>
+        <h2
+          data-api="POST /api/calidad/lint|POST /api/calidad/cobertura"
+          data-cmd="ruff check .|ruff format --check .|pytest --cov"
+        >
+          Análisis de calidad del código
+        </h2>
+        <p>
+          Se utiliza <code>Ruff</code> como herramienta de análisis estático:
+          detecta errores probables, imports sin usar, código demasiado complejo
+          y problemas de estilo sin ejecutar el programa. También se mide la
+          cobertura de las pruebas con <code>pytest-cov</code>. Las condiciones
+          de calidad son que si alguna no se cumple, el pipeline falla.
+        </p>
+        <div class="barra">
+          <button class="principal" id="btn-calidad">Volver a analizar</button>
+          <span class="estado" id="estado-calidad"></span>
+        </div>
+
+        <h3
+          data-api="POST /api/calidad/lint|POST /api/calidad/cobertura"
+          data-cmd="ruff check .|ruff format --check .|pytest --cov"
+        >
+          Condiciones de calidad
+        </h3>
+        <div class="resumen" id="veredicto"></div>
+        <div class="tabla-scroll">
+          <table id="tabla-condiciones">
+            <thead>
+              <tr>
+                <th>Condición</th>
+                <th>Resultado</th>
+                <th>Detalle</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="resumen" id="resumen"></div>
+
+        <h3 data-api="POST /api/calidad/lint" data-cmd="ruff check .">
+          Hallazgos de Ruff
+        </h3>
+        <div class="tabla-scroll">
+          <table id="tabla-reglas">
+            <thead>
+              <tr>
+                <th>Regla</th>
+                <th>Cantidad</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="tabla-scroll">
+          <table id="tabla-hallazgos">
+            <thead>
+              <tr>
+                <th>Archivo</th>
+                <th>Línea</th>
+                <th>Regla</th>
+                <th>Mensaje</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <h3 data-api="POST /api/calidad/lint" data-cmd="ruff format --check .">
+          Archivos que no cumplen el formato
+        </h3>
+        <pre id="sin-formato"></pre>
+
+        <h3 data-api="POST /api/calidad/cobertura" data-cmd="pytest --cov">
+          Cobertura de las pruebas por archivo
+        </h3>
+        <div class="tabla-scroll">
+          <table id="tabla-cobertura">
+            <thead>
+              <tr>
+                <th>Archivo</th>
+                <th>Sentencias</th>
+                <th>Sin cubrir</th>
+                <th>Cobertura</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <h3 data-api="POST /api/calidad/cobertura" data-cmd="pytest --cov">
+          Salida de pytest
+        </h3>
+        <pre id="salida"></pre>
+      </section>
+    </main>
+    <script src="/estatico/js/comun.js"></script>
+    <script src="/estatico/js/calidad.js"></script>
+  </body>
+</html>

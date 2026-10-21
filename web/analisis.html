@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Planificador inteligente de rutas · Análisis</title>
+    <link rel="stylesheet" href="/estatico/css/estilos.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Planificador inteligente de rutas</h1>
+      <nav>
+        <a href="/">Editor</a>
+        <a class="activa" href="/analisis">Análisis</a>
+        <a href="/optimizacion">Optimización</a>
+        <a href="/pruebas">Pruebas</a>
+        <a href="/calidad">Calidad</a>
+        <a href="/documentacion">Documentación</a>
+      </nav>
+    </header>
+    <main>
+      <section>
+        <h2 data-api="POST /api/analisis/benchmark">
+          Rendimiento de los algoritmos
+        </h2>
+        <p>
+          Se comparan los algoritmos bajo las mismas condiciones con grafos de
+          100, 1.000 y 5.000 nodos.
+        </p>
+        <div class="barra">
+          <button class="principal" id="btn-benchmark">Ejecutar</button>
+          <span class="estado" id="estado-benchmark"></span>
+        </div>
+        <div id="resultados-benchmark" class="resultados-por-grupo">
+          <p class="nota">
+            Los resultados aparecerán agrupados por cantidad de nodos.
+          </p>
+        </div>
+      </section>
+      <section>
+        <h2 data-api="POST /api/analisis/escalabilidad">
+          Escalabilidad hasta 100.000 nodos y comparación con la teoría
+        </h2>
+        <p>
+          Se mide el tiempo y la memoria de cada algoritmo en grafos de 1.000,
+          5.000, 10.000, 50.000 y 100.000 nodos, y se compara el tiempo
+          observado con el que predice la complejidad:
+          <code>O(V + E)</code> para BFS y <code>O((V + E) log V)</code> para
+          Dijkstra y A*. El esperado de cada tamaño se escala desde el más
+          chico. Tarda unos 25 segundos, por eso se ejecuta a pedido.
+        </p>
+        <div class="barra">
+          <button class="principal" id="btn-escalabilidad">Ejecutar</button>
+          <span class="estado" id="estado-escalabilidad"></span>
+        </div>
+        <div id="grafico-escalabilidad"></div>
+        <div class="tabla-scroll">
+          <table id="tabla-escalabilidad">
+            <thead>
+              <tr>
+                <th>Nodos</th>
+                <th>Aristas</th>
+                <th>Algoritmo</th>
+                <th>Tiempo (ms)</th>
+                <th>Esperado teórico (ms)</th>
+                <th>Observado / teórico</th>
+                <th>Nodos explorados</th>
+                <th>Esperado según explorados (ms)</th>
+                <th>Observado / explorados</th>
+                <th>µs por nodo explorado</th>
+                <th>Memoria pico (KB)</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <h3>Memoria del grafo</h3>
+        <div class="tabla-scroll">
+          <table id="tabla-grafos">
+            <thead>
+              <tr>
+                <th>Nodos</th>
+                <th>Aristas</th>
+                <th>Memoria (MB)</th>
+                <th>Bytes por nodo</th>
+                <th>Tiempo de generación (s)</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <h3>De dónde sale el crecimiento (10.000 → 100.000 nodos)</h3>
+        <p class="nota">
+          El grafo crece 10 veces. Como el tiempo es
+          <em>nodos explorados × costo por nodo</em>, la tabla separa cuánto
+          del crecimiento viene de explorar más nodos y cuánto de que cada
+          nodo cuesta más. La última columna es lo que agrega solo el factor
+          <code>log V</code> de la teoría.
+        </p>
+        <div class="tabla-scroll">
+          <table id="tabla-descomposicion">
+            <thead>
+              <tr>
+                <th>Algoritmo</th>
+                <th>Tiempo ×</th>
+                <th>Nodos explorados ×</th>
+                <th>Costo por nodo ×</th>
+                <th>Factor log V esperado ×</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <h3>Cómo leer la comparación</h3>
+        <p class="nota">
+          <strong>Observado / teórico</strong> usa el peor caso: todos los
+          nodos y aristas. Las búsquedas se detienen al llegar al destino, así
+          que el trabajo real depende de cuánto de la red recorren, y por eso
+          este cociente puede quedar por debajo o por encima de 1 sin que el
+          algoritmo escale mal. <strong>Observado / explorados</strong> corrige
+          eso: usa los nodos que de verdad se exploraron, y un valor cercano a
+          1 significa que el tiempo crece como dice la teoría (en Dijkstra y A*,
+          nodos explorados por log V). Si el cociente crece con el tamaño, algo
+          más agrega costo por nodo: caché de CPU, memoria o el recolector de
+          basura. <strong>µs por nodo explorado</strong> muestra ese costo
+          directamente. La memoria del algoritmo crece con los nodos explorados
+          y es independiente de la del grafo.
+        </p>
+      </section>
+      <section>
+        <h2
+          data-api="POST /api/analisis/cache"
+          data-cmd="pytest tests/test_cache.py -q"
+        >
+          Caché
+        </h2>
+        <p>
+          Se evalúa la reutilización de rutas con un grafo de 2.000 nodos, 500
+          consultas y 50 pares origen-destino.
+        </p>
+        <div class="barra">
+          <button class="principal" id="btn-cache">Ejecutar</button>
+          <span class="estado" id="estado-cache"></span>
+        </div>
+        <div class="tabla-scroll">
+          <table id="tabla-cache">
+            <thead>
+              <tr>
+                <th>Modo</th>
+                <th>Tiempo (ms)</th>
+                <th>Memoria pico (KB)</th>
+                <th>Consultas</th>
+                <th>Aciertos</th>
+                <th>Fallos</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p id="texto-cache"></p>
+      </section>
+
+      <section>
+        <h2 data-api="POST /api/analisis/concurrencia">
+          Concurrencia y paralelismo
+        </h2>
+        <p>
+          Se comparan ejecución secuencial, hilos y procesos con 300 consultas
+          sobre el mismo grafo.
+        </p>
+        <div class="barra">
+          <button class="principal" id="btn-concurrencia">Ejecutar</button>
+          <span class="estado" id="estado-concurrencia"></span>
+        </div>
+        <div class="tabla-scroll">
+          <table id="tabla-concurrencia">
+            <thead>
+              <tr>
+                <th>Modo</th>
+                <th>Tiempo (ms)</th>
+                <th>Memoria pico (KB)</th>
+                <th>Consultas procesadas</th>
+                <th>Aceleración vs secuencial</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="nota">
+          Los hilos no aceleran tareas que usan sobre todo la CPU, porque todos
+          comparten el GIL y solo uno ejecuta código Python a la vez. Para ese
+          tipo de tareas los procesos pueden ser más rápidos, ya que cada uno
+          tiene su propio intérprete y su propio GIL, pero tienen un costo: hay
+          que crearlos y copiar el grafo a cada trabajador, y ese costo forma
+          parte del tiempo total. En cuanto a la memoria,
+          <code>tracemalloc</code> mide el pico; con procesos cada trabajador
+          tiene su propio espacio, por lo que el consumo total puede ser mucho
+          mayor y el valor mostrado es el mayor pico observado en un trabajador.
+        </p>
+      </section>
+
+      <section>
+        <h2>Perfilado</h2>
+        <p>Se utiliza un grafo de 5.000 nodos.</p>
+        <div class="barra">
+          <button class="principal" id="btn-perfilado">Ejecutar</button>
+          <span class="estado" id="estado-perfilado"></span>
+        </div>
+        <h3 data-api="POST /api/analisis/perfilado">
+          CPU con <code>cProfile</code> — 20 consultas por algoritmo
+        </h3>
+        <div id="resultados-perfilado" class="resultados-por-grupo">
+          <p class="nota">
+            Ejecutá el perfilado para generar una tabla por algoritmo.
+          </p>
+        </div>
+        <h3
+          data-api="POST /api/analisis/snakeviz"
+          data-cmd="snakeviz perfiles/dijkstra.prof"
+        >
+          Visualización interactiva con <code>SnakeViz</code>
+        </h3>
+        <p class="nota">
+          SnakeViz lee los archivos <code>.prof</code> que genera
+          <code>cProfile</code> y los dibuja como un gráfico <em>icicle</em> o
+          <em>sunburst</em>: cada bloque es una función, su ancho es el tiempo
+          acumulado y se puede hacer clic para entrar en las subllamadas.
+        </p>
+        <div class="barra">
+          <div
+            class="selector-snakeviz"
+            id="selector-snakeviz"
+            role="group"
+            aria-label="Algoritmo a visualizar"
+          ></div>
+          <a id="enlace-snakeviz" href="#" target="_blank" rel="noopener" hidden
+            >Abrir en una pestaña nueva</a
+          >
+          <span class="estado" id="estado-snakeviz"></span>
+        </div>
+        <iframe
+          id="marco-snakeviz"
+          class="marco-snakeviz"
+          title="Perfil de CPU en SnakeViz"
+          hidden
+        ></iframe>
+        <h3 data-api="POST /api/analisis/lineas" data-cmd="kernprof -l -v script.py">
+          Tiempo línea por línea con <code>line_profiler</code>
+        </h3>
+        <p class="nota">
+          <code>cProfile</code> dice qué función es cara; <code>line_profiler</code>
+          dice qué línea dentro de ella. El perfilador agrega un costo fijo por
+          línea ejecutada, así que sirve para comparar líneas entre sí (el
+          porcentaje), no para medir tiempos absolutos. Dijkstra y A*
+          comparten el bucle (<code>buscar_con_heap</code>) y la diferencia
+          está en las líneas que evalúan la heurística.
+        </p>
+        <div class="barra">
+          <button class="principal" id="btn-lineas">Ejecutar</button>
+          <span class="estado" id="estado-lineas"></span>
+        </div>
+        <div id="resultados-lineas" class="resultados-por-grupo">
+          <p class="nota">Ejecutá la medición para ver una tabla por algoritmo.</p>
+        </div>
+        <h3 data-api="POST /api/analisis/perfilado">
+          Memoria línea por línea con <code>memory_profiler</code>
+        </h3>
+        <p class="nota">
+          Este perfilado mide la función de prueba compartida que ejecuta BFS,
+          Dijkstra y A* sobre el mismo grafo.
+        </p>
+        <div class="tabla-scroll">
+          <table id="tabla-memoria">
+            <thead>
+              <tr>
+                <th>Línea</th>
+                <th>Memoria total (MiB)</th>
+                <th>Incremento (MiB)</th>
+                <th>Código</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <h3 data-api="POST /api/analisis/perfilado">
+          Salida del perfilado de memoria
+        </h3>
+        <pre id="salida-memoria" class="salida-consola">
+La salida se completa al ejecutar el perfilado.</pre
+        >
+        <h3 data-api="POST /api/analisis/scalene" data-cmd="scalene run rutas/escenario_scalene.py|scalene view">
+          CPU y memoria con <code>Scalene</code>
+        </h3>
+        <p class="nota">
+          Scalene perfila el programa completo y reparte el tiempo de cada línea
+          entre código Python, código nativo (C) y llamadas al sistema, y mide
+          el pico de memoria por línea. Se ejecuta como proceso aparte con 150
+          consultas por algoritmo y la tabla muestra las líneas del proyecto con
+          más costo.
+        </p>
+        <div class="barra">
+          <button class="principal" id="btn-scalene">Ejecutar</button>
+          <span class="estado" id="estado-scalene"></span>
+        </div>
+        <div class="resumen" id="resumen-scalene"></div>
+        <div class="tabla-scroll">
+          <table id="tabla-scalene">
+            <thead>
+              <tr>
+                <th>Archivo</th>
+                <th>Línea</th>
+                <th>CPU Python (%)</th>
+                <th>CPU nativo (%)</th>
+                <th>Sistema (%)</th>
+                <th>Memoria pico (MB)</th>
+                <th>Código</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+      <section>
+        <h2
+          data-api="POST /api/analisis/entrada_salida"
+          data-cmd="pytest tests/test_entrada_salida.py -q"
+        >
+          Entrada y salida con archivos grandes
+        </h2>
+        <p>
+          Se genera un archivo de 100.000 aristas
+          (<code>origen,destino,peso</code>) y se comparan
+          <strong>buffer</strong> al escribir, <strong>batching</strong> al leer
+          y <strong>procesamiento en paralelo</strong> de los lotes.
+        </p>
+        <div class="barra">
+          <button class="principal" id="btn-entrada_salida">Ejecutar</button>
+          <span class="estado" id="estado-entrada_salida"></span>
+        </div>
+        <h3 data-api="POST /api/analisis/entrada_salida">Escritura: buffer</h3>
+        <div class="tabla-scroll">
+          <table id="tabla-escritura">
+            <thead>
+              <tr>
+                <th>Modo</th>
+                <th>Tiempo (ms)</th>
+                <th>Memoria pico (KB)</th>
+                <th>Líneas</th>
+                <th>Aceleración vs primera fila</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="nota">
+          Python ya agrupa las escrituras por dentro; la primera fila fuerza un
+          <code>flush()</code> por línea para simular una operación de E/S por
+          registro. Escribir todo junto es igual de rápido que el buffer, pero
+          necesita memoria proporcional al archivo.
+        </p>
+        <h3 data-api="POST /api/analisis/entrada_salida">
+          Lectura: todo, línea por línea y por lotes
+        </h3>
+        <div class="tabla-scroll">
+          <table id="tabla-lectura">
+            <thead>
+              <tr>
+                <th>Modo</th>
+                <th>Tiempo (ms)</th>
+                <th>Memoria pico (KB)</th>
+                <th>Líneas</th>
+                <th>Aceleración vs primera fila</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="nota">
+          El archivo recién escrito está en la caché del sistema operativo, por
+          lo que estos tiempos son más bajos que con un disco frío. El ahorro de
+          leer línea por línea o por lotes está sobre todo en la memoria.
+        </p>
+        <h3 data-api="POST /api/analisis/entrada_salida">
+          Procesamiento en paralelo de los lotes
+        </h3>
+        <div class="tabla-scroll">
+          <table id="tabla-paralelo">
+            <thead>
+              <tr>
+                <th>Modo</th>
+                <th>Tiempo (ms)</th>
+                <th>Lotes</th>
+                <th>Líneas</th>
+                <th>Aceleración vs secuencial</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="nota" id="texto-entrada_salida"></p>
+        <p class="nota">
+          El procesamiento de cada lote es CPU puro: los hilos comparten el GIL
+          y no aceleran. Los procesos pueden acelerar solo con varios núcleos
+          libres, y cada lote debe serializarse para enviarse al proceso.
+        </p>
+      </section>
+      <section>
+        <h2 data-api="POST /api/analisis/prediccion|GET /api/analisis/prediccion/recomendar">
+          Predicción de rendimiento con IA
+        </h2>
+        <p>
+          Una <strong>regresión lineal</strong> (aprendizaje supervisado,
+          <code>scikit-learn</code>) aprende a predecir cuánto tarda una
+          consulta de BFS, Dijkstra o A* a partir de la cantidad de nodos y de
+          aristas del grafo. Los datos no vienen de afuera: se miden en el
+          momento sobre 40 grafos de entrenamiento de 500 a 10.000 nodos y
+          de 2 a 8 aristas por nodo. Como el tiempo no crece en línea recta, el
+          modelo trabaja con logaritmos:
+          <code>ln(t) = a + b·ln(V) + c·ln(E)</code>, es decir
+          <code>t ∝ V<sup>b</sup>·E<sup>c</sup></code>, y los exponentes
+          <em>b</em> y <em>c</em> se pueden comparar con la complejidad
+          teórica. Se evalúa con 5 grafos que no vio, algunos más grandes que
+          todo el entrenamiento. Tarda unos segundos.
+        </p>
+        <div class="barra">
+          <button class="principal" id="btn-prediccion">Entrenar y evaluar</button>
+          <span class="estado" id="estado-prediccion"></span>
+        </div>
+        <div class="resumen" id="resumen-prediccion"></div>
+        <h3>Calidad del modelo por algoritmo</h3>
+        <div class="tabla-scroll">
+          <table id="tabla-evaluaciones">
+            <thead>
+              <tr>
+                <th>Algoritmo</th>
+                <th>R² (entrenamiento)</th>
+                <th>Error medio en grafos nuevos (%)</th>
+                <th>Exponente de V</th>
+                <th>Exponente de E</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <h3>Predicción frente a lo medido (grafos que el modelo no vio)</h3>
+        <div class="tabla-scroll">
+          <table id="tabla-pruebas-ia">
+            <thead>
+              <tr>
+                <th>Nodos</th>
+                <th>Aristas</th>
+                <th>Algoritmo</th>
+                <th>Medido (ms)</th>
+                <th>Predicho (ms)</th>
+                <th>Error (%)</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="nota" id="texto-seleccion"></p>
+        <h3 data-api="GET /api/analisis/prediccion/recomendar">
+          Consultar el modelo
+        </h3>
+        <p class="nota">
+          Pide una predicción para un grafo que no se midió. Primero hay que
+          entrenar el modelo.
+        </p>
+        <div class="barra">
+          <label>Nodos <input type="number" id="ia-nodos" value="100000" min="2" /></label>
+          <label>Aristas <input type="number" id="ia-aristas" value="300000" min="1" /></label>
+          <label><input type="checkbox" id="ia-ponderado" checked /> Con pesos</label>
+          <button id="btn-recomendar">Predecir</button>
+        </div>
+        <div class="tabla-scroll">
+          <table id="tabla-recomendacion">
+            <thead>
+              <tr>
+                <th>Algoritmo</th>
+                <th>Tiempo predicho (ms)</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="nota" id="texto-recomendacion"></p>
+        <h3>Límites del modelo</h3>
+        <p class="nota">
+          BFS minimiza saltos, no costo, así que solo se recomienda cuando el
+          grafo no tiene pesos. Los tiempos dependen de la máquina: el modelo
+          se entrena con mediciones de este equipo y no sirve en otro sin
+          volver a entrenarlo. Cuanto más lejos del rango visto, menos confiable
+          es la predicción: en los grafos grandes los tiempos crecen más que
+          en los chicos (caché de CPU, memoria), algo que el modelo ajustado a
+          grafos chicos no captura del todo.
+        </p>
+      </section>
+    </main>
+    <script src="/estatico/js/comun.js"></script>
+    <script src="/estatico/js/analisis.js"></script>
+  </body>
+</html>
