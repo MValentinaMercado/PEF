@@ -1,0 +1,105 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+# Si llega un commit nuevo a la misma rama, se cancela la corrida anterior.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  calidad:
+    name: Calidad, seguridad, pruebas y SonarQube
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      # coverage usa sys.monitoring y no choca con los perfiladores.
+      COVERAGE_CORE: sysmon
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # SonarQube necesita el historial completo
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Instalar dependencias
+        run: python -m pip install -r requirements.txt
+
+      - name: Verificar que la aplicación arranca
+        run: |
+          python - <<'PY'
+          from fastapi.testclient import TestClient
+          from api.app import app
+
+          respuesta = TestClient(app).get("/")
+          assert respuesta.status_code == 200, respuesta.status_code
+          print("La aplicación arranca y responde en /")
+          PY
+
+      - name: Calidad (Ruff)
+        run: |
+          ruff check .
+          ruff format --check .
+
+      - name: Tipos (mypy)
+        run: mypy
+
+      - name: Código muerto y repetido (Vulture y Pylint)
+        run: |
+          vulture
+          pylint rutas api main.py --disable=all --enable=duplicate-code --score=n
+
+      - name: Seguridad del código (Bandit)
+        # Falla con severidad media o alta; las bajas (subprocess con
+        # argumentos fijos, random sin fines criptográficos) se aceptan.
+        run: bandit -r rutas api main.py -ll
+
+      - name: Seguridad de dependencias (pip-audit)
+        run: pip-audit -r requirements.txt
+
+      - name: Pruebas y cobertura mínima
+        # Falla si una prueba falla o si la cobertura baja del fail_under de
+        # pyproject.toml.
+        run: pytest --cov --cov-report=xml --cov-report=term-missing --junitxml=resultados.xml
+
+      - name: Resumen de pruebas
+        if: always()
+        run: |
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          from pathlib import Path
+
+          from api.pruebas_router import resumir_junit
+
+          r = resumir_junit(Path("resultados.xml").read_text(encoding="utf-8"))
+          print("### Resumen de pruebas\n")
+          print("| Ejecutadas | Exitosas | Fallidas | Con error | Segundos |")
+          print("|---|---|---|---|---|")
+          print(f"| {r['total']} | {r['aprobadas']} | {r['fallidas']} | {r['errores']} | {r['segundos']} |")
+          PY
+
+      - name: Guardar evidencias
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resultados
+          path: |
+            resultados.xml
+            coverage.xml
+
+      - name: Análisis con SonarQube Cloud
+        # Sin el secret (por ejemplo en PRs desde forks) este paso se omite.
+        if: env.SONAR_TOKEN != ''
+        uses: SonarSource/sonarqube-scan-action@v8
+        with:
+          # Falla el pipeline si el Quality Gate no se cumple.
+          args: -Dsonar.qualitygate.wait=true

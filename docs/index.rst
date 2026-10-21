@@ -16,8 +16,9 @@ seis ventanas:
    el proyecto.
 4. **Pruebas**: ejecución de la suite (``unittest``, ``pytest``,
    ``doctest`` y ``timeit``).
-5. **Calidad**: análisis estático con Ruff, cobertura y condiciones de
-   calidad.
+5. **Calidad**: estado del proyecto en SonarQube Cloud (Quality Gate y
+   métricas); el pipeline de CI aplica además Ruff, mypy, Vulture, Pylint,
+   Bandit, pip-audit y la cobertura mínima.
 6. **Documentación**: esta documentación, generada con Sphinx.
 
 Cada tabla o resultado de la aplicación muestra, en un recuadro que aparece

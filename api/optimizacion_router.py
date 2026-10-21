@@ -23,14 +23,9 @@ from typing import Literal
 
 from fastapi import APIRouter, HTTPException
 
-from api.calidad_router import (
-    _entorno_cobertura,
-    _relativa,
-    resumir_ruff,
-)
 from api.estado import estado
 from api.pruebas_router import correr_pytest
-from rutas.procesos import ejecutar_modulo
+from rutas.procesos import ejecutar_modulo, entorno_cobertura, ruta_relativa
 
 OBJETIVOS = ("rutas", "api", "main.py")
 REGLAS_RUFF = "F401,F811,F841,ERA001,SIM,C4,PIE"
@@ -64,6 +59,29 @@ def agrupar_lineas(lineas: list[int]) -> list[tuple[int, int]]:
     return tramos
 
 
+def hallazgos_ruff(texto_json: str) -> list[dict]:
+    """Filas para la tabla a partir de la salida JSON de ``ruff check``.
+
+    >>> texto = ('[{"code": "F401", "message": "sin usar", "filename": "x.py",'
+    ...          ' "location": {"row": 3, "column": 1}}]')
+    >>> [(h["linea"], h["regla"]) for h in hallazgos_ruff(texto)]
+    [(3, 'F401')]
+    >>> hallazgos_ruff("[]")
+    []
+    """
+    hallazgos = [
+        {
+            "archivo": ruta_relativa(h["filename"]),
+            "linea": h["location"]["row"],
+            "regla": h["code"] or "",
+            "mensaje": h["message"],
+        }
+        for h in json.loads(texto_json or "[]")
+    ]
+    hallazgos.sort(key=lambda h: (h["archivo"], h["linea"]))
+    return hallazgos
+
+
 def hallazgos_vulture(salida: str) -> list[dict]:
     """Convierte la salida de texto de Vulture en filas para la tabla.
 
@@ -76,7 +94,7 @@ def hallazgos_vulture(salida: str) -> list[dict]:
     """
     return [
         {
-            "archivo": _relativa(m["archivo"]),
+            "archivo": ruta_relativa(m["archivo"]),
             "linea": int(m["linea"]),
             "regla": f"{m['confianza']} %",
             "mensaje": m["mensaje"],
@@ -138,7 +156,7 @@ def resumir_radon(texto_cc: str, texto_mi: str) -> dict:
     """
     funciones = [
         {
-            "archivo": _relativa(archivo),
+            "archivo": ruta_relativa(archivo),
             "linea": bloque["lineno"],
             "regla": f"{bloque['rank']} ({bloque['complexity']})",
             "mensaje": ".".join(
@@ -153,7 +171,7 @@ def resumir_radon(texto_cc: str, texto_mi: str) -> dict:
     ]
     funciones.sort(key=lambda f: -f["complejidad"])
     indices = {
-        _relativa(archivo): datos["mi"]
+        ruta_relativa(archivo): datos["mi"]
         for archivo, datos in json.loads(texto_mi).items()
         if isinstance(datos, dict) and "mi" in datos
     }
@@ -188,7 +206,7 @@ def resumir_lineas_sin_ejecutar(texto_json: str) -> dict:
     datos = json.loads(texto_json)
     filas = [
         {
-            "archivo": _relativa(archivo),
+            "archivo": ruta_relativa(archivo),
             "linea": inicio,
             "regla": "sin ejecutar",
             "mensaje": f"líneas {inicio}-{fin}"
@@ -263,7 +281,7 @@ def _ruff() -> dict:
         "--no-cache",
         codigos_validos=(0, 1),
     )
-    filas = resumir_ruff(proceso.stdout)["hallazgos"]
+    filas = hallazgos_ruff(proceso.stdout)
     return _respuesta(
         "Ruff",
         "0 hallazgos de código redundante",
@@ -335,7 +353,7 @@ def _cobertura() -> dict:
         proceso = correr_pytest(
             "--cov",
             f"--cov-report=json:{informe}",
-            entorno=_entorno_cobertura(),
+            entorno=entorno_cobertura(),
         )
         if not informe.exists():
             raise HTTPException(

@@ -17,3 +17,6 @@ radon>=6.0
 line_profiler>=4.1
 scalene>=2.0
 scikit-learn>=1.4
+defusedxml>=0.7
+bandit>=1.7
+pip-audit>=2.7

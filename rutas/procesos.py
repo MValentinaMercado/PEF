@@ -1,5 +1,6 @@
 """Ejecución de herramientas externas como módulos de Python."""
 
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -34,3 +35,26 @@ def ejecutar_modulo(
         )
     except subprocess.TimeoutExpired as error:
         raise RuntimeError(f"{modulo} tardó demasiado.") from error
+
+
+def ruta_relativa(ruta: str) -> str:
+    """Ruta relativa a la raíz del proyecto, con ``/`` en cualquier sistema.
+
+    >>> ruta_relativa("api/app.py")
+    'api/app.py'
+    >>> ruta_relativa(str(RAIZ / "rutas" / "grafo.py"))
+    'rutas/grafo.py'
+    """
+    try:
+        return Path(ruta).resolve().relative_to(RAIZ).as_posix()
+    except ValueError:
+        return Path(ruta).as_posix()
+
+
+def entorno_cobertura() -> dict[str, str]:
+    """Entorno para medir cobertura sin chocar con ``memory_profiler``.
+
+    ``coverage`` usa ``sys.monitoring`` (Python 3.12+) en vez de
+    ``sys.settrace``; así no interfiere con los perfiladores.
+    """
+    return {**os.environ, "COVERAGE_CORE": "sysmon"}

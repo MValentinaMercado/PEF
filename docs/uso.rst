@@ -35,7 +35,7 @@ Con ese único comando se levanta todo. Abrir http://127.0.0.1:8000:
      - Ejecuta y muestra la suite de pruebas.
    * - 5 · Calidad
      - ``/calidad``
-     - Ruff, cobertura de las pruebas y condiciones de calidad.
+     - Quality Gate y métricas de SonarQube Cloud.
    * - 6 · Documentación
      - ``/documentacion``
      - Esta documentación, generada con Sphinx.

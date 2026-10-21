@@ -1,14 +1,15 @@
-cat > .gitignore << 'EOF'
 __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Resultados de herramientas
 .coverage
 coverage.xml
+resultados.xml
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
-docs/_build/
 .scannerwork/
-.env
-EOF
+docs/_build/
+perfiles/*.prof

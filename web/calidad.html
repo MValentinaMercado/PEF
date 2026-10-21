@@ -21,98 +21,67 @@
     <main>
       <section>
         <h2
-          data-api="POST /api/calidad/lint|POST /api/calidad/cobertura"
-          data-cmd="ruff check .|ruff format --check .|pytest --cov"
+          data-api="GET /api/calidad/sonar"
+          data-cmd="sonar-scanner -Dsonar.qualitygate.wait=true"
         >
-          Análisis de calidad del código
+          Análisis de calidad con SonarQube
         </h2>
         <p>
-          Se utiliza <code>Ruff</code> como herramienta de análisis estático:
-          detecta errores probables, imports sin usar, código demasiado complejo
-          y problemas de estilo sin ejecutar el programa. También se mide la
-          cobertura de las pruebas con <code>pytest-cov</code>. Las condiciones
-          de calidad son que si alguna no se cumple, el pipeline falla.
+          <code>SonarQube Cloud</code> analiza el código en cada push y en cada
+          Pull Request del pipeline de integración continua. Detecta
+          <strong>bugs</strong>, <strong>vulnerabilidades</strong>,
+          <strong>puntos críticos de seguridad</strong>, <em>code smells</em>
+          (código difícil de mantener) y <strong>duplicación</strong>, y mide
+          la cobertura de las pruebas. El <strong>Quality Gate</strong> es el
+          conjunto de condiciones que el código nuevo debe cumplir: si alguna
+          falla, el pipeline falla. Esta ventana no analiza nada: muestra el
+          resultado del último análisis.
         </p>
         <div class="barra">
-          <button class="principal" id="btn-calidad">Volver a analizar</button>
+          <button class="principal" id="btn-calidad">Actualizar</button>
+          <a id="enlace-panel" href="#" target="_blank" rel="noopener" hidden>
+            Abrir en SonarQube Cloud
+          </a>
           <span class="estado" id="estado-calidad"></span>
         </div>
 
-        <h3
-          data-api="POST /api/calidad/lint|POST /api/calidad/cobertura"
-          data-cmd="ruff check .|ruff format --check .|pytest --cov"
-        >
-          Condiciones de calidad
-        </h3>
         <div class="resumen" id="veredicto"></div>
+
+        <h3 data-api="GET /api/calidad/sonar">Condiciones del Quality Gate</h3>
         <div class="tabla-scroll">
           <table id="tabla-condiciones">
             <thead>
               <tr>
                 <th>Condición</th>
                 <th>Resultado</th>
-                <th>Detalle</th>
+                <th>Valor</th>
+                <th>Se exige</th>
               </tr>
             </thead>
             <tbody></tbody>
           </table>
         </div>
 
-        <div class="resumen" id="resumen"></div>
+        <h3 data-api="GET /api/calidad/sonar">Métricas del proyecto</h3>
+        <div class="resumen" id="medidas"></div>
 
-        <h3 data-api="POST /api/calidad/lint" data-cmd="ruff check .">
-          Hallazgos de Ruff
-        </h3>
-        <div class="tabla-scroll">
-          <table id="tabla-reglas">
-            <thead>
-              <tr>
-                <th>Regla</th>
-                <th>Cantidad</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-        <div class="tabla-scroll">
-          <table id="tabla-hallazgos">
-            <thead>
-              <tr>
-                <th>Archivo</th>
-                <th>Línea</th>
-                <th>Regla</th>
-                <th>Mensaje</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-
-        <h3 data-api="POST /api/calidad/lint" data-cmd="ruff format --check .">
-          Archivos que no cumplen el formato
-        </h3>
-        <pre id="sin-formato"></pre>
-
-        <h3 data-api="POST /api/calidad/cobertura" data-cmd="pytest --cov">
-          Cobertura de las pruebas por archivo
-        </h3>
-        <div class="tabla-scroll">
-          <table id="tabla-cobertura">
-            <thead>
-              <tr>
-                <th>Archivo</th>
-                <th>Sentencias</th>
-                <th>Sin cubrir</th>
-                <th>Cobertura</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-        <h3 data-api="POST /api/calidad/cobertura" data-cmd="pytest --cov">
-          Salida de pytest
-        </h3>
-        <pre id="salida"></pre>
+        <h3>Cómo está configurado</h3>
+        <p>
+          El proyecto se identifica en <code>sonar-project.properties</code>
+          (organización y clave del proyecto, que no son secretas). El pipeline
+          (<code>.github/workflows/ci.yml</code>) genera
+          <code>coverage.xml</code> con <code>pytest --cov</code>, ejecuta el
+          análisis con la action oficial de SonarQube y, con
+          <code>sonar.qualitygate.wait=true</code>, espera el resultado del
+          Quality Gate. El token de acceso no está en el repositorio: se guarda
+          como secret <code>SONAR_TOKEN</code> de GitHub.
+        </p>
+        <p class="nota">
+          Antes de SonarQube, el mismo pipeline ya exige Ruff (calidad y
+          formato), mypy, Vulture, Pylint (código repetido), Bandit y
+          pip-audit (seguridad) y una cobertura mínima del 80 %. Los
+          resultados de limpieza de código se ven en la ventana Optimización.
+        </p>
       </section>
     </main>
     <script src="/estatico/js/comun.js"></script>

@@ -33,6 +33,7 @@ campos_de_filas.incremento_mib
 # rutas/perfilado.py y rutas/perfilado_scalene.py: filas de line_profiler y
 # de Scalene
 campos_de_filas.tiempo_us
+campos_de_filas.porcentaje
 campos_de_filas.segundos
 campos_de_filas.fraccion_python
 

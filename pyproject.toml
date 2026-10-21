@@ -22,7 +22,11 @@ max-complexity = 10
 "vulture_lista_blanca.py" = ["B018"]
 
 [tool.coverage.run]
-source = ["rutas", "api"]
+# Sin "source": con relative_files, coverage.xml trae rutas desde la raíz del
+# repo ("api/app.py"), que es lo que SonarQube necesita para asociarlas a los
+# archivos. "include" limita la medición a estas carpetas.
+include = ["api/*", "rutas/*"]
+relative_files = true
 
 [tool.coverage.report]
 # Umbral mínimo de cobertura: si baja de aquí, el pipeline falla.

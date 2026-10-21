@@ -2,9 +2,9 @@
 
 import subprocess
 import tempfile
-import xml.etree.ElementTree as ET
 from pathlib import Path
 
+from defusedxml import ElementTree as ET
 from fastapi import APIRouter, HTTPException
 
 from api.estado import estado

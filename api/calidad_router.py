@@ -1,252 +1,184 @@
-"""Ventana Calidad: análisis estático con Ruff, cobertura y condiciones.
+"""Ventana Calidad: estado del proyecto en SonarQube Cloud.
 
-Son las mismas comprobaciones que ejecuta el pipeline de integración continua
-(``.github/workflows/ci.yml``); aquí se ven desde el navegador. Los umbrales
-salen de ``pyproject.toml`` para que haya una sola fuente de verdad.
+SonarQube analiza el código en el pipeline de integración continua
+(``.github/workflows/ci.yml``). Esta ventana no analiza nada: consulta la API
+de SonarQube Cloud y muestra el Quality Gate y las métricas del último
+análisis.
+
+El proyecto y la organización salen de ``sonar-project.properties`` (única
+fuente de verdad). Con la variable ``SONAR_TOKEN`` se pueden leer proyectos
+privados y con ``SONAR_URL`` se cambia el servidor.
 """
 
-import json
 import os
-import re
-import subprocess
-import sys
-import tempfile
-import tomllib
-from collections import Counter
-from pathlib import Path
 
+import httpx
 from fastapi import APIRouter, HTTPException
 
-from api.estado import estado
-from api.pruebas_router import correr_pytest, resumir_junit
+from rutas.procesos import RAIZ
 
-RAIZ = Path(__file__).resolve().parent.parent
-TIEMPO_MAXIMO_S = 300
-PATRON_SIN_FORMATO = re.compile(
-    r"^(?:Would reformat: (?P<viejo>.+?)"
-    r"|(?P<nuevo>.+?):\d+:\d+: unformatted\b.*)\s*$",
-    re.MULTILINE,
-)
+PROPIEDADES = RAIZ / "sonar-project.properties"
+URL_POR_DEFECTO = "https://sonarcloud.io"
+TIEMPO_ESPERA_S = 15
+METRICAS = {
+    "bugs": "Bugs",
+    "vulnerabilities": "Vulnerabilidades",
+    "security_hotspots": "Puntos críticos de seguridad",
+    "code_smells": "Code smells",
+    "coverage": "Cobertura (%)",
+    "duplicated_lines_density": "Líneas duplicadas (%)",
+    "ncloc": "Líneas de código",
+    "reliability_rating": "Fiabilidad (calificación)",
+    "security_rating": "Seguridad (calificación)",
+    "sqale_rating": "Mantenibilidad (calificación)",
+}
+CALIFICACIONES = {1: "A", 2: "B", 3: "C", 4: "D", 5: "E"}
 
 router = APIRouter(prefix="/api/calidad")
 
 
-def umbral_cobertura() -> float:
-    """Cobertura mínima exigida (``fail_under`` de ``pyproject.toml``)."""
-    with (RAIZ / "pyproject.toml").open("rb") as archivo:
-        config = tomllib.load(archivo)
-    return float(config["tool"]["coverage"]["report"]["fail_under"])
+def parsear_propiedades(texto: str) -> dict[str, str]:
+    """Lee un archivo ``.properties`` (``clave=valor``, ``#`` comenta).
 
-
-def _relativa(ruta: str) -> str:
-    """Ruta relativa a la raíz del proyecto, con ``/`` en cualquier sistema.
-
-    >>> _relativa("api/app.py")
-    'api/app.py'
+    >>> parsear_propiedades("# nota\\nsonar.projectKey=X\\n\\na.b = 1,2\\n")
+    {'sonar.projectKey': 'X', 'a.b': '1,2'}
     """
-    try:
-        return Path(ruta).resolve().relative_to(RAIZ).as_posix()
-    except ValueError:
-        return Path(ruta).as_posix()
+    propiedades = {}
+    for linea in texto.splitlines():
+        linea = linea.strip()
+        if linea and not linea.startswith("#") and "=" in linea:
+            clave, valor = linea.split("=", 1)
+            propiedades[clave.strip()] = valor.strip()
+    return propiedades
 
 
-def resumir_ruff(texto_json: str) -> dict:
-    """Convierte la salida JSON de ``ruff check`` en un resumen visual.
+def valor_legible(clave: str, valor: str) -> str:
+    """Las calificaciones llegan como 1 a 5 y se muestran como A a E.
 
-    >>> r = resumir_ruff('[{"code": "F401", "message": "sin usar",'
-    ...                  ' "filename": "x.py",'
-    ...                  ' "location": {"row": 3, "column": 1}}]')
-    >>> r["total"], r["por_regla"], r["hallazgos"][0]["linea"]
-    (1, {'F401': 1}, 3)
-    >>> resumir_ruff("[]")["total"]
-    0
+    >>> valor_legible("security_rating", "1.0")
+    'A'
+    >>> valor_legible("new_maintainability_rating", "2")
+    'B'
+    >>> valor_legible("coverage", "93.6")
+    '93.6'
     """
-    hallazgos = [
+    if clave.endswith("_rating"):
+        return CALIFICACIONES.get(round(float(valor)), valor)
+    return valor
+
+
+def nombre_metrica(clave: str) -> str:
+    """Nombre legible de una métrica (``new_`` es código nuevo).
+
+    >>> nombre_metrica("coverage")
+    'Cobertura (%)'
+    >>> nombre_metrica("new_coverage")
+    'Cobertura (%) en código nuevo'
+    """
+    base = clave.removeprefix("new_")
+    nombre = METRICAS.get(base, base.replace("_", " "))
+    return f"{nombre} en código nuevo" if clave.startswith("new_") else nombre
+
+
+def resumir_sonar(puerta: dict, medidas: dict) -> dict:
+    """Une el Quality Gate (``project_status``) con las métricas.
+
+    >>> puerta = {"projectStatus": {"status": "OK", "conditions": [
+    ...     {"status": "OK", "metricKey": "new_coverage",
+    ...      "comparator": "LT", "errorThreshold": "80",
+    ...      "actualValue": "91.2"}]}}
+    >>> medidas = {"component": {"measures": [
+    ...     {"metric": "sqale_rating", "value": "1.0"},
+    ...     {"metric": "bugs", "value": "0"}]}}
+    >>> r = resumir_sonar(puerta, medidas)
+    >>> r["estado"], r["condiciones"][0]["exigencia"]
+    ('OK', '≥ 80')
+    >>> [(m["nombre"], m["valor"]) for m in r["medidas"]]
+    [('Bugs', '0'), ('Mantenibilidad (calificación)', 'A')]
+    """
+    estado = puerta["projectStatus"]
+    condiciones = [
         {
-            "archivo": _relativa(h["filename"]),
-            "linea": h["location"]["row"],
-            "columna": h["location"]["column"],
-            "regla": h["code"] or "",
-            "mensaje": h["message"],
+            "nombre": nombre_metrica(c["metricKey"]),
+            "ok": c["status"] == "OK",
+            "valor": valor_legible(c["metricKey"], c.get("actualValue", "")),
+            "exigencia": (
+                f"{'≥' if c['comparator'] == 'LT' else '≤'} "
+                f"{valor_legible(c['metricKey'], c['errorThreshold'])}"
+            ),
         }
-        for h in json.loads(texto_json or "[]")
+        for c in estado.get("conditions", [])
     ]
-    hallazgos.sort(key=lambda h: (h["archivo"], h["linea"]))
-    por_regla = dict(Counter(h["regla"] for h in hallazgos).most_common())
+    obtenidas = {
+        m["metric"]: m.get("value", "")
+        for m in medidas["component"]["measures"]
+    }
     return {
-        "total": len(hallazgos),
-        "por_regla": por_regla,
-        "hallazgos": hallazgos,
+        "estado": estado["status"],
+        "condiciones": condiciones,
+        "medidas": [
+            {
+                "nombre": nombre,
+                "valor": valor_legible(clave, obtenidas[clave]),
+            }
+            for clave, nombre in METRICAS.items()
+            if clave in obtenidas
+        ],
     }
 
 
-def archivos_sin_formato(salida: str) -> list[str]:
-    """Archivos que ``ruff format --check`` reformaría (formato nuevo/viejo).
-
-    >>> salida = "Would reformat: a.py\\nb.py:2:1: unformatted: x\\n"
-    >>> archivos_sin_formato(salida)
-    ['a.py', 'b.py']
-    """
-    return sorted(
-        _relativa(m["viejo"] or m["nuevo"])
-        for m in PATRON_SIN_FORMATO.finditer(salida)
-    )
+def _servidor() -> str:
+    return os.environ.get("SONAR_URL", URL_POR_DEFECTO).rstrip("/")
 
 
-def condiciones_lint(
-    total_hallazgos: int, sin_formato: list[str]
-) -> list[dict]:
-    """Condiciones de calidad del análisis estático.
-
-    >>> [c["ok"] for c in condiciones_lint(0, [])]
-    [True, True]
-    >>> [c["ok"] for c in condiciones_lint(2, ["a.py"])]
-    [False, False]
-    """
-    return [
-        {
-            "nombre": "Ruff: sin hallazgos de calidad",
-            "ok": total_hallazgos == 0,
-            "detalle": f"{total_hallazgos} hallazgo(s); se exige 0",
-        },
-        {
-            "nombre": "Ruff: formato del código correcto",
-            "ok": not sin_formato,
-            "detalle": f"{len(sin_formato)} archivo(s) sin formatear; "
-            "se exige 0",
-        },
-    ]
-
-
-def condiciones_cobertura(
-    porcentaje: float, minimo: float, no_aprobadas: int
-) -> list[dict]:
-    """Condiciones de calidad de las pruebas y su cobertura.
-
-    >>> [c["ok"] for c in condiciones_cobertura(93.0, 80.0, 0)]
-    [True, True]
-    >>> [c["ok"] for c in condiciones_cobertura(70.0, 80.0, 1)]
-    [False, False]
-    """
-    return [
-        {
-            "nombre": "Pruebas: todas aprobadas",
-            "ok": no_aprobadas == 0,
-            "detalle": f"{no_aprobadas} no aprobada(s); se exige 0",
-        },
-        {
-            "nombre": "Cobertura mínima",
-            "ok": porcentaje >= minimo,
-            "detalle": f"{porcentaje:.1f} % obtenido; se exige {minimo:.0f} %",
-        },
-    ]
-
-
-def _ruff(*argumentos: str) -> subprocess.CompletedProcess:
-    """Ejecuta Ruff (instalado como módulo de Python) sobre el proyecto."""
+def _obtener(ruta: str, parametros: dict[str, str]) -> dict:
+    """GET a la API de SonarQube con errores traducidos a mensajes claros."""
+    token = os.environ.get("SONAR_TOKEN")
     try:
-        return subprocess.run(
-            [sys.executable, "-m", "ruff", *argumentos],
-            cwd=RAIZ,
-            capture_output=True,
-            text=True,
-            timeout=60,
-            check=False,
+        respuesta = httpx.get(
+            _servidor() + ruta,
+            params=parametros,
+            auth=(token, "") if token else None,
+            timeout=TIEMPO_ESPERA_S,
+            follow_redirects=True,
         )
-    except subprocess.TimeoutExpired as error:
-        raise HTTPException(504, "Ruff tardó demasiado.") from error
-
-
-@router.post("/lint")
-def ejecutar_lint() -> dict:
-    """Corre ``ruff check`` (calidad) y ``ruff format --check`` (formato)."""
-    calidad = _ruff("check", ".", "--output-format", "json", "--no-cache")
-    if calidad.returncode not in (0, 1):  # 2 = Ruff no pudo ejecutarse
+    except httpx.HTTPError as error:
         raise HTTPException(
-            500,
-            "Ruff no está disponible: "
-            f"{(calidad.stderr or calidad.stdout)[-500:]}",
+            502, f"No se pudo conectar con SonarQube Cloud: {error}"
+        ) from error
+    if respuesta.status_code in (401, 403):
+        raise HTTPException(
+            502,
+            "SonarQube Cloud rechazó la consulta: si el proyecto es privado, "
+            "definí la variable de entorno SONAR_TOKEN.",
         )
-    formato = _ruff(
-        "format", "--check", "--output-format", "concise", "--no-cache"
+    if respuesta.status_code == 404:
+        raise HTTPException(
+            502,
+            "SonarQube Cloud no conoce el proyecto: revisá "
+            "sonar-project.properties y que el pipeline ya lo haya analizado.",
+        )
+    if respuesta.status_code >= 400:
+        raise HTTPException(
+            502, f"SonarQube Cloud respondió {respuesta.status_code}."
+        )
+    return respuesta.json()
+
+
+@router.get("/sonar")
+def estado_sonar() -> dict:
+    """Quality Gate y métricas del último análisis en SonarQube Cloud."""
+    propiedades = parsear_propiedades(PROPIEDADES.read_text(encoding="utf-8"))
+    proyecto = propiedades["sonar.projectKey"]
+    puerta = _obtener(
+        "/api/qualitygates/project_status", {"projectKey": proyecto}
     )
-    sin_formato = archivos_sin_formato(formato.stdout + formato.stderr)
-    resumen = resumir_ruff(calidad.stdout)
-    version = _ruff("--version").stdout.strip()
-    return {
-        "herramienta": version or "ruff",
-        "calidad": resumen,
-        "sin_formato": sin_formato,
-        "condiciones": condiciones_lint(resumen["total"], sin_formato),
-    }
-
-
-def resumir_cobertura(texto_json: str) -> dict:
-    """Resumen por archivo del informe JSON de ``coverage``.
-
-    >>> t = ('{"totals": {"percent_covered": 90.0},'
-    ...      ' "files": {"a.py": {"summary": {"num_statements": 10,'
-    ...      ' "missing_lines": 1, "percent_covered": 90.0}}}}')
-    >>> r = resumir_cobertura(t)
-    >>> r["porcentaje"], r["archivos"][0]["faltan"]
-    (90.0, 1)
-    """
-    datos = json.loads(texto_json)
-    archivos = [
-        {
-            "archivo": _relativa(nombre),
-            "sentencias": info["summary"]["num_statements"],
-            "faltan": info["summary"]["missing_lines"],
-            "porcentaje": info["summary"]["percent_covered"],
-        }
-        for nombre, info in datos["files"].items()
-    ]
-    archivos.sort(key=lambda a: (a["porcentaje"], a["archivo"]))
-    return {
-        "porcentaje": datos["totals"]["percent_covered"],
-        "archivos": archivos,
-    }
-
-
-def _entorno_cobertura() -> dict[str, str]:
-    """Entorno para medir cobertura sin chocar con ``memory_profiler``.
-
-    ``coverage`` usa ``sys.monitoring`` (Python 3.12+) en vez de
-    ``sys.settrace``; así no interfiere con el perfilador de memoria.
-    """
-    return {**os.environ, "COVERAGE_CORE": "sysmon"}
-
-
-@router.post("/cobertura")
-def ejecutar_cobertura() -> dict:
-    """Corre ``pytest --cov`` y devuelve cobertura y estado de las pruebas."""
-    minimo = umbral_cobertura()
-    # Las pruebas de rendimiento miden tiempos: no deben solaparse con
-    # otras mediciones de la aplicación.
-    with estado.cerrojo_medicion, tempfile.TemporaryDirectory() as carpeta:
-        informe_xml = Path(carpeta) / "informe.xml"
-        informe_cov = Path(carpeta) / "cobertura.json"
-        proceso = correr_pytest(
-            "--cov",
-            f"--cov-report=json:{informe_cov}",
-            f"--junitxml={informe_xml}",
-            entorno=_entorno_cobertura(),
-        )
-        if not (informe_xml.exists() and informe_cov.exists()):
-            raise HTTPException(
-                500,
-                "No se generó el informe (¿está instalado pytest-cov?): "
-                + (proceso.stdout + proceso.stderr)[-600:],
-            )
-        pruebas = resumir_junit(informe_xml.read_text(encoding="utf-8"))
-        cobertura = resumir_cobertura(informe_cov.read_text(encoding="utf-8"))
-    no_aprobadas = pruebas["fallidas"] + pruebas["errores"]
-    return {
-        "pruebas": {k: pruebas[k] for k in ("total", "aprobadas", "segundos")}
-        | {"no_aprobadas": no_aprobadas},
-        "cobertura": cobertura | {"minimo": minimo},
-        "condiciones": condiciones_cobertura(
-            cobertura["porcentaje"], minimo, no_aprobadas
-        ),
-        "salida": proceso.stdout[-3000:],
+    medidas = _obtener(
+        "/api/measures/component",
+        {"component": proyecto, "metricKeys": ",".join(METRICAS)},
+    )
+    return resumir_sonar(puerta, medidas) | {
+        "proyecto": proyecto,
+        "organizacion": propiedades["sonar.organization"],
+        "panel": f"{_servidor()}/summary/overall?id={proyecto}",
     }

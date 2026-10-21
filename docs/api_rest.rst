@@ -83,10 +83,11 @@ Pruebas, calidad y documentación
      - Descripción
    * - ``POST /api/pruebas/ejecutar``
      - Ejecuta ``pytest`` y devuelve el resultado de cada prueba.
-   * - ``POST /api/calidad/lint``
-     - Ejecuta ``ruff check`` y ``ruff format --check``.
-   * - ``POST /api/calidad/cobertura``
-     - Ejecuta ``pytest --cov`` y devuelve cobertura y condiciones.
+   * - ``GET /api/calidad/sonar``
+     - Quality Gate y métricas del último análisis en SonarQube Cloud.
+   * - ``POST /api/optimizacion/{herramienta}``
+     - Ejecuta una herramienta de limpieza: ``ruff``, ``vulture``,
+       ``pylint``, ``radon`` o ``cobertura``.
    * - ``GET /api/documentacion/estado``
      - Indica si la documentación está generada y cuándo.
    * - ``POST /api/documentacion/generar``

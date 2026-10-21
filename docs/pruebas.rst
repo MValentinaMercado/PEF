@@ -12,8 +12,8 @@ agrupadas por tipo:
 
 * **unittest**: ``tests/test_algoritmos.py`` y ``tests/test_cache.py``.
 * **pytest** con *fixtures* (``tests/conftest.py``): integración de la API
-  con ``TestClient``, de los experimentos de análisis y de la ventana de
-  calidad.
+  con ``TestClient``, de los experimentos de análisis y de las ventanas de
+  optimización y calidad.
 * **doctest**: los ejemplos ``>>>`` de los docstrings
   (``--doctest-modules``, configurado en ``pytest.ini``).
 * **E/S de archivos grandes**: ``tests/test_entrada_salida.py`` comprueba que
