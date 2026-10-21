@@ -11,12 +11,14 @@ from rutas.generador import preparar_escenario
 
 
 def ejecutar_escenario(
-    cantidad_nodos: int = 5000, cantidad_consultas: int = 150
+    cantidad_nodos: int = 5000, cantidad_consultas: int = 3000
 ) -> None:
     """Resuelve las consultas con cada algoritmo.
 
     Son más consultas que en cProfile para que Scalene, que muestrea el
-    programa cada pocos milisegundos, junte suficientes muestras.
+    programa cada pocos milisegundos, junte suficientes muestras. En Windows
+    Scalene 2.3 descarta el perfil si mide menos de un segundo de CPU y con
+    150 consultas (2 s en total) no llegaba; con 600 dura unos 6-9 s.
 
     >>> ejecutar_escenario(100, 2)
     """

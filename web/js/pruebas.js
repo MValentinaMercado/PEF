@@ -95,4 +95,4 @@ async function ejecutar() {
 el("btn-pruebas").addEventListener("click", ejecutar);
 el("filtro-tipo").addEventListener("change", () => datos && detalle());
 el("solo-fallas").addEventListener("change", () => datos && detalle());
-ejecutar(); // al abrir la ventana se ejecutan solas
+void ejecutar(); // al abrir la ventana se ejecutan solas

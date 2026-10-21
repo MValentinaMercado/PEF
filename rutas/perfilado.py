@@ -198,7 +198,7 @@ class FilaMemoria(NamedTuple):
 
 
 _LINEA_MEMORIA = re.compile(
-    r"^\s*(\d+)\s+([\d.]+) MiB\s+(-?[\d.]+) MiB\s+\d+\s+(.*)$"
+    r"^\s*+(\d++)\s++([\d.]++) MiB\s++(-?[\d.]++) MiB\s++\d++\s++(.*)$"
 )
 
 

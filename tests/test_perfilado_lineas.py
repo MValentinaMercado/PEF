@@ -1,6 +1,8 @@
 """Pruebas de line_profiler y Scalene (ventana Análisis, perfilado)."""
 
+import json
 import subprocess
+from pathlib import Path
 
 import pytest
 
@@ -79,9 +81,97 @@ def test_scalene_lento_da_error(monkeypatch):
         ejecutar_scalene()
 
 
+def _scalene_falso(perfiles, llamadas):
+    """``ejecutar_modulo`` falso: escribe el siguiente perfil de la lista."""
+
+    def falso(modulo, *argumentos, **_):
+        llamadas.append(argumentos)
+        destino = argumentos[argumentos.index("-o") + 1]
+        Path(destino).write_text(perfiles.pop(0), encoding="utf-8")
+        return subprocess.CompletedProcess([], 0, "", "no hubo muestras")
+
+    return falso
+
+
+def _perfil_con_una_linea():
+    linea = {
+        "lineno": 7,
+        "line": "x = 1\n",
+        "n_cpu_percent_python": 40.0,
+        "n_cpu_percent_c": 5.0,
+        "n_sys_percent": 0.0,
+        "n_peak_mb": 0.0,
+    }
+    archivo = str(perfilado_scalene.RAIZ / "rutas" / "a.py")
+    return json.dumps(
+        {
+            "elapsed_time_sec": 3.0,
+            "max_footprint_mb": 0,
+            "max_footprint_python_fraction": 0,
+            "files": {archivo: {"lines": [linea]}},
+        }
+    )
+
+
+def test_scalene_se_ejecuta_con_profile_all(monkeypatch):
+    llamadas = []
+    monkeypatch.setattr(
+        perfilado_scalene,
+        "ejecutar_modulo",
+        _scalene_falso([_perfil_con_una_linea()], llamadas),
+    )
+    resultado = ejecutar_scalene()
+    assert "--profile-all" in llamadas[0]
+    assert [f.archivo for f in resultado.filas] == ["rutas/a.py"]
+
+
+def test_scalene_descarta_el_entorno_virtual_del_proyecto():
+    linea = {
+        "lineno": 1,
+        "line": "x = 1\n",
+        "n_cpu_percent_python": 50.0,
+        "n_cpu_percent_c": 0.0,
+        "n_sys_percent": 0.0,
+        "n_peak_mb": 0.0,
+    }
+    raiz = perfilado_scalene.RAIZ
+    datos = {
+        "elapsed_time_sec": 1.0,
+        "max_footprint_mb": 1.0,
+        "max_footprint_python_fraction": 1.0,
+        "files": {
+            str(raiz / "rutas" / "grafo.py"): {"lines": [linea]},
+            str(raiz / ".venv" / "Lib" / "site-packages" / "x.py"): {
+                "lines": [linea]
+            },
+        },
+    }
+    resultado = perfilado_scalene.resumir_scalene(json.dumps(datos))
+    assert [f.archivo for f in resultado.filas] == ["rutas/grafo.py"]
+
+
+def test_scalene_si_siempre_sale_vacio_muestra_su_salida(monkeypatch):
+    monkeypatch.setattr(
+        perfilado_scalene,
+        "ejecutar_modulo",
+        _scalene_falso(["{}", "{}"], []),
+    )
+    with pytest.raises(RuntimeError, match="no hubo muestras"):
+        ejecutar_scalene()
+
+
+def test_scalene_perfil_vacio_da_error_claro():
+    with pytest.raises(RuntimeError, match="perfil vacío"):
+        perfilado_scalene.resumir_scalene("{}")
+
+
 def test_scalene_real_perfila_el_proyecto():
     pytest.importorskip("scalene")
-    resultado = ejecutar_scalene()
+    try:
+        resultado = ejecutar_scalene()
+    except RuntimeError as error:
+        # Scalene no puede medir en todos los sistemas (p. ej. Windows).
+        pytest.skip(f"Scalene no pudo perfilar en este entorno: {error}")
     assert resultado.segundos > 0
     archivos = {f.archivo for f in resultado.filas}
     assert any(a.startswith("rutas/algoritmos/") for a in archivos)

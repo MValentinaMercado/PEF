@@ -105,10 +105,15 @@ function filaComando(etiqueta, texto) {
   copiar.textContent = "Copiar";
   copiar.addEventListener("click", (evento) => {
     evento.stopPropagation();
-    copiarTexto(texto).then(() => {
-      copiar.textContent = "Copiado";
-      setTimeout(() => (copiar.textContent = "Copiar"), 1200);
-    });
+    copiarTexto(texto)
+      .then(() => {
+        copiar.textContent = "Copiado";
+        setTimeout(() => (copiar.textContent = "Copiar"), 1200);
+      })
+      .catch(() => {
+        copiar.textContent = "No se pudo copiar";
+        setTimeout(() => (copiar.textContent = "Copiar"), 1800);
+      });
   });
   fila.append(rotulo, codigo, copiar);
   return fila;

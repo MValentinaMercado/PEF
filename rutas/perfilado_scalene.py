@@ -3,10 +3,16 @@
 Scalene perfila un programa entero, por eso se ejecuta como proceso aparte
 sobre :mod:`rutas.escenario_scalene` y después se lee el JSON que genera.
 Se necesita Scalene 2.0 o superior (``scalene run``).
+
+Se usa ``--profile-all``: sin esa opción Scalene 2.3 no registra nada en
+Windows ("did not run for long enough to profile") ni siquiera con un
+programa trivial. Como incluye también las librerías, después se descartan
+todos los archivos que no son del proyecto.
 """
 
 import json
 import os
+import subprocess
 import tempfile
 from pathlib import Path
 from typing import NamedTuple
@@ -17,6 +23,8 @@ ESCENARIO = Path(__file__).resolve().parent / "escenario_scalene.py"
 TIEMPO_MAXIMO_S = 180
 MINIMO_CPU = 0.5  # % del tiempo total para mostrar una línea
 MINIMO_MEMORIA_MB = 1.0
+# Carpetas que no son código del proyecto aunque estén dentro de la raíz.
+EXCLUIDAS = frozenset({".venv", "venv", "site-packages"})
 # Scalene escribe estos caracteres como secuencias \\uXXXX dentro del texto.
 ESCAPES = {"\\u003c": "<", "\\u003e": ">", "\\u0026": "&"}
 
@@ -53,6 +61,23 @@ def _sin_escapes(texto: str) -> str:
     return texto
 
 
+def _es_del_proyecto(ruta: Path) -> bool:
+    """Código del proyecto: no el escenario, ni librerías, ni el entorno.
+
+    >>> _es_del_proyecto(RAIZ / "rutas" / "grafo.py")
+    True
+    >>> _es_del_proyecto(RAIZ / ".venv" / "Lib" / "site-packages" / "x.py")
+    False
+    >>> _es_del_proyecto(Path("/otro/b.py"))
+    False
+    """
+    return (
+        ruta != ESCENARIO
+        and ruta.is_relative_to(RAIZ)
+        and EXCLUIDAS.isdisjoint(ruta.parts)
+    )
+
+
 def resumir_scalene(texto_json: str, cantidad: int = 12) -> ResultadoScalene:
     """Las líneas del proyecto con más CPU (o memoria) según Scalene.
 
@@ -71,12 +96,23 @@ def resumir_scalene(texto_json: str, cantidad: int = 12) -> ResultadoScalene:
     [('rutas/a.py', 7, 'x = 1')]
     >>> r.segundos, r.memoria_pico_mb
     (3.0, 9.0)
+
+    Un perfil vacío (``{}``) es un error claro, no un ``KeyError``:
+
+    >>> resumir_scalene("{}")  # doctest: +ELLIPSIS
+    Traceback (most recent call last):
+    ...
+    RuntimeError: Scalene generó un perfil vacío...
     """
     datos = json.loads(texto_json)
+    if "files" not in datos:
+        raise RuntimeError(
+            "Scalene generó un perfil vacío: no llegó a muestrear el programa."
+        )
     filas = []
     for archivo, info in datos["files"].items():
         ruta = Path(archivo)
-        if ruta == ESCENARIO or not ruta.is_relative_to(RAIZ):
+        if not _es_del_proyecto(ruta):
             continue
         for linea in info["lines"]:
             cpu = (
@@ -110,12 +146,10 @@ def resumir_scalene(texto_json: str, cantidad: int = 12) -> ResultadoScalene:
     )
 
 
-def ejecutar_scalene() -> ResultadoScalene:
-    """Perfila el escenario con ``scalene run`` y resume el resultado.
+def _correr_scalene() -> tuple[str, subprocess.CompletedProcess]:
+    """Ejecuta ``scalene run`` y devuelve el texto del perfil y el proceso.
 
-    Lanza ``RuntimeError`` si Scalene no está instalado, tarda demasiado o
-    no logra generar el perfil (por ejemplo, en sistemas donde no puede medir
-    memoria).
+    Lanza ``RuntimeError`` si Scalene no generó ningún archivo de perfil.
     """
     with tempfile.TemporaryDirectory() as carpeta:
         perfil = Path(carpeta) / "scalene.json"
@@ -124,6 +158,7 @@ def ejecutar_scalene() -> ResultadoScalene:
             "run",
             "-o",
             str(perfil),
+            "--profile-all",
             str(ESCENARIO),
             tiempo=TIEMPO_MAXIMO_S,
             # Para que el escenario pueda hacer ``from rutas import ...``.
@@ -132,6 +167,27 @@ def ejecutar_scalene() -> ResultadoScalene:
         if not perfil.exists():
             raise RuntimeError(
                 "Scalene no generó el perfil (¿está instalado scalene>=2.0?): "
-                + (proceso.stderr or proceso.stdout)[-500:]
+                + _cola(proceso)
             )
-        return resumir_scalene(perfil.read_text(encoding="utf-8"))
+        return perfil.read_text(encoding="utf-8"), proceso
+
+
+def _cola(proceso: subprocess.CompletedProcess) -> str:
+    """Lo último que imprimió Scalene, para explicar un fallo."""
+    salida = (proceso.stderr or proceso.stdout or "").strip()
+    return salida[-500:] or "(sin salida)"
+
+
+def ejecutar_scalene() -> ResultadoScalene:
+    """Perfila el escenario con ``scalene run`` y resume el resultado.
+
+    Lanza ``RuntimeError`` si Scalene no está instalado, tarda demasiado o
+    no logra generar el perfil; el mensaje incluye la salida de Scalene.
+    """
+    texto, proceso = _correr_scalene()
+    try:
+        return resumir_scalene(texto)
+    except RuntimeError as error:
+        raise RuntimeError(
+            f"{error} Salida de Scalene: {_cola(proceso)}"
+        ) from error

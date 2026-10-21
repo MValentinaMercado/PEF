@@ -54,4 +54,4 @@ async function actualizar() {
 }
 
 el("btn-calidad").addEventListener("click", actualizar);
-actualizar(); // al abrir la ventana se consulta sola
+void actualizar(); // al abrir la ventana se consulta sola

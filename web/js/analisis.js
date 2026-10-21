@@ -215,7 +215,7 @@ async function prepararSnakeviz(algoritmos) {
 }
 
 const ejecutarPerfilado = enlazar("perfilado", ({ cpu, memoria }) => {
-  prepararSnakeviz(Object.keys(cpu));
+  void prepararSnakeviz(Object.keys(cpu));
   const nombres = { BFS: "BFS", Dijkstra: "Dijkstra", "A*": "A*" };
   el("resultados-perfilado").innerHTML = Object.entries(cpu)
     .map(([algoritmo, funciones]) => {
@@ -457,7 +457,7 @@ el("btn-recomendar").addEventListener("click", async () => {
 
 // Al abrir la ventana se ejecuta todo (uno por vez: las mediciones no
 // deben solaparse); los botones sirven para repetir una medición.
-(async () => {
+void (async () => {
   for (const ejecutar of [
     ejecutarBenchmark,
     ejecutarCache,

@@ -64,4 +64,4 @@ async function analizar() {
 }
 
 el("btn-limpieza").addEventListener("click", analizar);
-analizar(); // al abrir la ventana se ejecuta sola
+void analizar(); // al abrir la ventana se ejecuta sola

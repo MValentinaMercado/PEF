@@ -1,0 +1,19 @@
+--- a/rutas/algoritmos/comunes.py
++++ b/rutas/algoritmos/comunes.py
+@@ -51,14 +51,14 @@
+     """
+     costo = {origen: 0.0}
+     anterior: dict[str, str | None] = {origen: None}
+-    cerrados = set()
++    cerrados: list[str] = []
+     heap = [(0.0 if heuristica is None else heuristica(origen), 0.0, origen)]
+     explorados = 0
+     while heap:
+         _, costo_actual, actual = heapq.heappop(heap)
+         if actual in cerrados:  # ignora entradas antiguas
+             continue
+-        cerrados.add(actual)
++        cerrados.append(actual)
+         explorados += 1
+         if actual == destino:
+             ruta = reconstruir_ruta(anterior, destino)

@@ -494,4 +494,4 @@ function elegirResultado(algoritmo) {
     ? grafo.nodos[grafo.nodos.length - 1].nombre
     : "";
   dibujar();
-})();
+})().catch((error) => mensaje(error.message, true));

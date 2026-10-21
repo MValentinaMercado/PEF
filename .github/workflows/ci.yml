@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   calidad:
-    name: Calidad, seguridad, pruebas y SonarQube
+    name: Calidad, seguridad, pruebas, rendimiento y SonarQube
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -86,6 +86,12 @@ jobs:
           print("|---|---|---|---|---|")
           print(f"| {r['total']} | {r['aprobadas']} | {r['fallidas']} | {r['errores']} | {r['segundos']} |")
           PY
+
+      - name: Performance Gate
+        # Dijkstra sobre 100.000 nodos: falla (y muestra "Performance Gate
+        # FAILED") si la mediana por consulta supera los 500 ms. El umbral y
+        # su justificación están en rutas/performance_gate.py.
+        run: python -m rutas.performance_gate
 
       - name: Guardar evidencias
         if: always()
