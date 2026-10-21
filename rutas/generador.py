@@ -54,7 +54,8 @@ def generar_consultas(
     nodos = grafo.nodos()
     consultas: list[Consulta] = []
     for _ in range(cantidad):
-        origen, destino = azar.sample(nodos, 2)
+        # Consultas reproducibles (semilla fija): no es criptografía.
+        origen, destino = azar.sample(nodos, 2)  # NOSONAR
         consultas.append((origen, destino))
     return consultas
 

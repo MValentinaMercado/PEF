@@ -106,8 +106,10 @@ def generar_lineas(cantidad: int, semilla: int = 1) -> Iterator[str]:
     azar = random.Random(semilla)
     nodos = max(2, cantidad // 4)
     for _ in range(cantidad):
-        origen = azar.randrange(nodos)
-        destino = (origen + 1 + azar.randrange(nodos - 1)) % nodos  # != origen
+        # Datos de prueba reproducibles (semilla fija): no es criptografía.
+        origen = azar.randrange(nodos)  # NOSONAR
+        salto = 1 + azar.randrange(nodos - 1)  # NOSONAR
+        destino = (origen + salto) % nodos  # != origen
         yield f"{origen},{destino},{azar.uniform(1, 500):.2f}\n"
 
 

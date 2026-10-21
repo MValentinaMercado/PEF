@@ -51,7 +51,8 @@ def url_perfil(archivo: Path) -> str:
     False
     """
     ruta = quote(str(archivo.resolve()), safe="")
-    return f"http://{HOST}:{PUERTO}/snakeviz/{ruta}"
+    # SnakeViz solo sirve HTTP y escucha únicamente en loopback (127.0.0.1).
+    return f"http://{HOST}:{PUERTO}/snakeviz/{ruta}"  # NOSONAR
 
 
 def iniciar(archivo: Path) -> None:
