@@ -23,7 +23,7 @@ jobs:
       # coverage usa sys.monitoring y no choca con los perfiladores.
       COVERAGE_CORE: sysmon
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0 # SonarQube necesita el historial completo
 
