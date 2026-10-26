@@ -90,3 +90,10 @@ def test_herramienta_lenta_da_error_de_tiempo(cliente, monkeypatch):
 
     monkeypatch.setattr(subprocess, "run", lento)
     assert cliente.post("/api/optimizacion/vulture").status_code == 504
+
+
+def test_hallazgos_pylint_ignora_otros_mensajes():
+    texto = json.dumps(
+        {"messages": [{"symbol": "line-too-long", "message": "x"}]}
+    )
+    assert optimizacion_router.hallazgos_pylint(texto) == []

@@ -33,6 +33,10 @@ relative_files = true
 # si baja de aquí, el pipeline falla.
 fail_under = 90
 show_missing = true
+# El arranque `if __name__ == "__main__":` solo corre desde la consola.
+exclude_also = [
+    'if __name__ == "__main__":',
+]
 
 [tool.mypy]
 # Tipado estricto en funciones: toda función debe declarar tipos.
