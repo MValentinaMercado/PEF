@@ -29,8 +29,9 @@ include = ["api/*", "rutas/*"]
 relative_files = true
 
 [tool.coverage.report]
-# Umbral mínimo de cobertura: si baja de aquí, el pipeline falla.
-fail_under = 80
+# Umbral mínimo de cobertura (el enunciado exige 80 %; el equipo usa 90 %):
+# si baja de aquí, el pipeline falla.
+fail_under = 90
 show_missing = true
 
 [tool.mypy]

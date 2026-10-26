@@ -1,0 +1,12 @@
+version: 2
+updates:
+  # Alertas y propuestas de actualización de las dependencias de Python.
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+  # Versiones de las acciones usadas por el pipeline.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

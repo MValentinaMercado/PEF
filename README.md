@@ -78,9 +78,26 @@ La app la genera sola al arrancar si todavía no existe.
 ## Integración continua y SonarQube
 
 El workflow `.github/workflows/ci.yml` corre en cada push a `main` y en cada
-Pull Request: arranque de la app, Ruff, mypy, Vulture, Pylint, Bandit,
-pip-audit, pruebas con cobertura mínima del 80 % y el análisis de
-SonarQube Cloud (el Quality Gate bloquea si no se cumple).
+Pull Request: secretos (Gitleaks), arranque de la app, Ruff (incluye
+complejidad ciclomática máxima 10), mypy, Vulture, Pylint, Bandit,
+pip-audit, Sphinx sin advertencias, pruebas con cobertura mínima del 90 %,
+Performance Gate y el análisis de SonarQube Cloud (el Quality Gate bloquea
+si no se cumple). Dependabot propone actualizaciones semanales.
+
+Los mismos controles se pueden correr en local:
+
+```bash
+ruff check . && ruff format --check . && mypy
+vulture && bandit -r rutas api main.py -ll
+pip-audit -r requirements.txt
+python -m sphinx -b html -q -W docs docs/_build/html
+pytest --cov --cov-report=term-missing   # falla si baja del 90 %
+python -m rutas.performance_gate
+```
+
+Política de seguridad: Bandit bloquea severidad media o alta; pip-audit
+bloquea cualquier vulnerabilidad conocida; Gitleaks bloquea cualquier
+secreto. Los hallazgos de severidad baja se aceptan y quedan documentados.
 
 Para activarlo en un repositorio nuevo:
 

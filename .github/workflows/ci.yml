@@ -32,6 +32,12 @@ jobs:
           python-version: "3.12"
           cache: pip
 
+      - name: Detectar secretos (Gitleaks)
+        # Falla si encuentra tokens, contraseñas o claves en el historial.
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Instalar dependencias
         run: python -m pip install -r requirements.txt
 
@@ -62,10 +68,24 @@ jobs:
       - name: Seguridad del código (Bandit)
         # Falla con severidad media o alta; las bajas (subprocess con
         # argumentos fijos, random sin fines criptográficos) se aceptan.
-        run: bandit -r rutas api main.py -ll
+        run: |
+          bandit -r rutas api main.py -ll
+          bandit -r rutas api main.py -ll -q -f json -o bandit.json
 
       - name: Seguridad de dependencias (pip-audit)
-        run: pip-audit -r requirements.txt
+        # Falla ante cualquier vulnerabilidad conocida en requirements.txt.
+        # El informe JSON se guarda aunque falle.
+        run: |
+          set +e
+          pip-audit -r requirements.txt -f json -o pip-audit.json
+          estado=$?
+          python -m json.tool pip-audit.json | head -60
+          exit $estado
+
+      - name: Documentación (Sphinx sin advertencias)
+        # -W convierte cualquier advertencia (enlace roto, referencia
+        # inexistente) en error.
+        run: python -m sphinx -b html -q -W docs docs/_build/html
 
       - name: Pruebas y cobertura mínima
         # Falla si una prueba falla o si la cobertura baja del fail_under de
@@ -101,6 +121,8 @@ jobs:
           path: |
             resultados.xml
             coverage.xml
+            bandit.json
+            pip-audit.json
 
       - name: Análisis con SonarQube Cloud
         # Sin el secret (por ejemplo en PRs desde forks) este paso se omite.
