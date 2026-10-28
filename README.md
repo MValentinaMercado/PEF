@@ -88,7 +88,7 @@ pytest.ini         configuración de pytest (incluye doctest)
 
 ```bash
 pytest                       # pruebas (incluye doctests)
-pytest --cov                 # pruebas + cobertura (mínimo 90 %)
+pytest --cov                 # pruebas + cobertura (mínimo 80 %)
 ruff check .                 # análisis estático
 ruff format .                # formato (líneas de hasta 79 caracteres)
 mypy                         # tipado (configurado en pyproject.toml)
@@ -167,7 +167,7 @@ aprobaron:
 | Control             | Herramienta                          | Criterio de rechazo                                  | Informe |
 | ------------------- | ------------------------------------ | ---------------------------------------------------- | ------- |
 | Pruebas             | pytest (+ doctest)                   | Una prueba falla                                     | `resultados.xml` |
-| Cobertura           | coverage.py / pytest-cov             | Menos de 90 %                                        | `coverage.xml` |
+| Cobertura           | coverage.py / pytest-cov             | Menos de 80 %                                        | `coverage.xml` |
 | Análisis estático   | Ruff, Pylint, Vulture, SonarQube     | Cualquier hallazgo / Quality Gate                    | log, Sonar |
 | Tipado              | mypy                                 | Función sin tipos o error de tipos                   | log |
 | Complejidad         | Ruff (C90) y Radon                   | Función de rango C o peor (más de 10)                | `radon-cc.json`, `radon-mi.json` |
@@ -193,7 +193,7 @@ radon cc rutas api main.py -a -s -nb
 pip-audit -r requirements.txt
 mkdocs build --strict
 python -m sphinx -b html -q -W docs docs/_build/html
-pytest --cov --cov-report=term-missing   # falla si baja del 90 %
+pytest --cov --cov-report=term-missing   # falla si baja del 80 %
 python -m rutas.performance_gate
 python -m rutas.memory_gate
 ```

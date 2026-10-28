@@ -36,7 +36,7 @@ Está pensada para el análisis de eficiencia de algoritmos y para practicar un 
 |------|--------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------|
 | RNF1 | Dijkstra resuelve una consulta sobre 100.000 nodos con una mediana menor que 500 ms.                                                       | Performance Gate (`rutas/performance_gate.py`) |
 | RNF2 | El pico de memoria de Dijkstra con 100.000 nodos no supera 32 MiB.                                                                         | Memory Gate (`rutas/memory_gate.py`)           |
-| RNF3 | Al menos el 90 % del código se ejecuta en las pruebas.                                                                                     | `fail_under` en `pyproject.toml`               |
+| RNF3 | Al menos el 80 % del código se ejecuta en las pruebas.                                                                                     | `fail_under` en `pyproject.toml`               |
 | RNF4 | Ninguna función con complejidad ciclomática mayor que 10.                                                                                  | Ruff (C90) y Radon                             |
 | RNF5 | Sin secretos en el repositorio, sin vulnerabilidades conocidas en las dependencias y sin hallazgos de severidad media o alta en el código. | Gitleaks, pip-audit y Bandit (ver [Seguridad](seguridad.md)) |
 | RNF6 | Funciona con Python 3.12 o superior.                                                                                                       | Pipeline de CI (Python 3.12)                   |

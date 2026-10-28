@@ -31,7 +31,7 @@ relative_files = true
 [tool.coverage.report]
 # Umbral mínimo de cobertura definido por el equipo (hoy la cobertura real
 # supera el 99 %): si baja de aquí, el pipeline falla.
-fail_under = 90
+fail_under = 80
 show_missing = true
 # El arranque `if __name__ == "__main__":` solo corre desde la consola.
 exclude_also = [

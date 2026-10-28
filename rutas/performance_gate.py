@@ -86,12 +86,12 @@ def _leer_argumentos(argv: Sequence[str] | None) -> argparse.Namespace:
     return analizador.parse_args(argv)
 
 
-def _agregar_al_resumen(texto: str) -> None:
+def agregar_al_resumen(texto: str, titulo: str = "Performance Gate") -> None:
     """En GitHub Actions deja el resultado en el resumen de la corrida."""
     ruta = os.environ.get("GITHUB_STEP_SUMMARY")
     if ruta:
         with Path(ruta).open("a", encoding="utf-8") as archivo:
-            archivo.write(f"### Performance Gate\n\n{texto}\n")
+            archivo.write(f"### {titulo}\n\n{texto}\n")
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -111,7 +111,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         f"con {args.nodos} nodos; límite {args.umbral_ms:.0f} ms."
     )
     print(texto)
-    _agregar_al_resumen(texto)
+    agregar_al_resumen(texto)
     return 0 if cumple else 1
 
 

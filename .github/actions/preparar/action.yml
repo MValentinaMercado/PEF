@@ -1,18 +1,17 @@
-name: Preparar entorno Python
-description: Configura Python e instala las dependencias del proyecto
+name: Preparar entorno
+description: Instala Python y las dependencias del proyecto (etapa 2 del pipeline).
 
 runs:
   using: composite
   steps:
-    - name: Configurar Python
-      uses: actions/setup-python@v5
+    - uses: actions/setup-python@v5
       with:
         python-version: "3.12"
         cache: pip
-        cache-dependency-path: requirements.txt
 
     - name: Instalar dependencias
       shell: bash
       run: |
-        python -m pip install --upgrade pip
         python -m pip install -r requirements.txt
+        # Evidencia de reproducibilidad: versiones exactas de esta corrida.
+        python -m pip freeze > requirements-resuelto.txt

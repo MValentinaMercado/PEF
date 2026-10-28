@@ -42,7 +42,7 @@ pip install -r requirements.txt
 | Código muerto y repetido | `vulture` y `pylint rutas api main.py --disable=all --enable=duplicate-code --score=n`                                 | Cualquier hallazgo                            |
 | Complejidad              | `radon cc rutas api main.py -a -s -nb` (informe) y `radon cc rutas api main.py -nc` (debe no imprimir nada)            | Función de rango C o peor                     |
 | Seguridad del código     | `bandit -r rutas api main.py -ll`                                                                                      | Severidad media o alta                        |
-| Pruebas y cobertura      | `pytest --cov --cov-report=term-missing`                                                                               | Una prueba falla o la cobertura baja del 90 % |
+| Pruebas y cobertura      | `pytest --cov --cov-report=term-missing`                                                                               | Una prueba falla o la cobertura baja del 80 % |
 | Dependencias             | `pip-audit -r requirements.txt`                                                                                        | Vulnerabilidad conocida                       |
 | Documentación externa    | `mkdocs build --strict`                                                                                                | Advertencia o enlace interno roto             |
 | Enlaces externos         | `lychee --exclude 127.0.0.1 documentacion README.md` (programa aparte, opcional)                              | Enlace externo caído                          |

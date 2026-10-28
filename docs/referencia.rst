@@ -1,67 +1,86 @@
-﻿Referencia de módulos
-=======================
+Referencia del código
+=====================
 
-Grafo
------
+Lógica (módulos ``rutas``)
+--------------------------
 
 .. automodule:: rutas.grafo
    :members:
-   :undoc-members:
-   :show-inheritance:
 
-Generación de grafos
---------------------
-
-.. automodule:: rutas.generador
+.. automodule:: rutas.algoritmos
    :members:
-   :undoc-members:
-   :show-inheritance:
-
-Caché
------
 
 .. automodule:: rutas.cache
    :members:
-   :undoc-members:
-   :show-inheritance:
 
-Entrada y salida
-----------------
+.. automodule:: rutas.generador
+   :members:
+
+.. automodule:: rutas.mediciones
+   :members:
+
+.. automodule:: rutas.benchmark
+   :members:
+
+.. automodule:: rutas.experimento_cache
+   :members:
+
+.. automodule:: rutas.concurrencia
+   :members:
 
 .. automodule:: rutas.entrada_salida
    :members:
-   :undoc-members:
-   :show-inheritance:
 
-Información
------------
-
-.. automodule:: rutas.informacion
+.. automodule:: rutas.escalabilidad
    :members:
-   :undoc-members:
-   :show-inheritance:
-
-Predicción
-----------
 
 .. automodule:: rutas.prediccion
    :members:
-   :undoc-members:
-   :show-inheritance:
 
-Esquemas de la API
-------------------
+.. automodule:: rutas.perfilado
+   :members:
+
+.. automodule:: rutas.perfilado_scalene
+   :members:
+
+.. automodule:: rutas.procesos
+   :members:
+
+.. automodule:: rutas.ejemplo
+   :members:
+
+.. automodule:: rutas.informacion
+   :members:
+
+.. automodule:: rutas.performance_gate
+   :members:
+
+.. automodule:: rutas.memory_gate
+   :members:
+
+API (módulos ``api``)
+---------------------
+
+.. automodule:: api.grafo_router
+   :members:
+
+.. automodule:: api.analisis_router
+   :members:
 
 .. automodule:: api.esquemas
    :members:
-   :undoc-members:
-   :show-inheritance:
 
-Estado de la API
-----------------
+.. automodule:: api.pruebas_router
+   :members:
+
+.. automodule:: api.calidad_router
+   :members:
+
+.. automodule:: api.documentacion
+   :members:
+
+.. automodule:: api.visor_perfiles
+   :members:
 
 .. automodule:: api.estado
    :members:
-   :undoc-members:
-   :show-inheritance:
-
