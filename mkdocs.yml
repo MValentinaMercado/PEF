@@ -1,0 +1,51 @@
+site_name: Rutas en grafos
+site_description: Documentación externa de la aplicación de búsqueda de rutas (BFS, Dijkstra y A*).
+docs_dir: documentacion
+site_dir: site
+
+theme:
+  name: material
+  language: es
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - search.highlight
+
+nav:
+  - Inicio: index.md
+  - 1. Descripción funcional: funcional.md
+  - 2. Arquitectura: arquitectura.md
+  - 3. Instalación y uso: uso.md
+  - 4. Diseño técnico:
+      - Algoritmos y estructuras: algoritmos.md
+      - Decisiones de diseño: decisiones.md
+      - Optimización y refactorización: optimizacion.md
+      - Componente de IA: ia.md
+  - 5. API y contratos: api_rest.md
+  - 6. Pruebas: pruebas.md
+  - 7. Rendimiento: rendimiento.md
+  - 8. Seguridad: seguridad.md
+  - 9. Mantenimiento:
+      - Contribuir y ejecutar los controles: mantenimiento.md
+      - Calidad y pipeline de CI: calidad.md
+
+markdown_extensions:
+  - tables
+  - admonition
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+# Con --strict, estos avisos hacen fallar la construcción.
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+  anchors: warn
