@@ -1,9 +1,11 @@
 name: CI
 
+# Se ejecuta en cada push y en cada Pull Request hacia la rama principal.
 on:
   push:
     branches: [main]
   pull_request:
+    branches: [main]
 
 permissions:
   contents: read
@@ -13,44 +15,39 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Etapas (los jobs sin dependencia entre sí corren en paralelo):
+#
+#   secretos ─┐
+#   estatica ─┼─> rendimiento ─┐
+#   pruebas  ─┘                ├─> resultado (Aprobado / Rechazado)
+#   seguridad_y_docs ──────────┘
+#
+# Los controles rápidos (estáticos, pruebas, seguridad) corren primero; las
+# mediciones costosas (rendimiento, memoria, profiling) solo se ejecutan si
+# los anteriores aprobaron.
 jobs:
-  calidad:
-    name: Calidad, seguridad, pruebas, rendimiento y SonarQube
+  secretos:
+    name: Secretos (Gitleaks)
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-    env:
-      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      # coverage usa sys.monitoring y no choca con los perfiladores.
-      COVERAGE_CORE: sysmon
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # SonarQube necesita el historial completo
+          fetch-depth: 0 # revisa todo el historial, no solo el último commit
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: pip
-
-      - name: Detectar secretos (Gitleaks)
+      - name: Detectar secretos
         # Falla si encuentra tokens, contraseñas o claves en el historial.
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Instalar dependencias
-        run: python -m pip install -r requirements.txt
-
-      - name: Verificar que la aplicación arranca
-        run: |
-          python - <<'PY'
-          from fastapi.testclient import TestClient
-          from api.app import app
-
-          respuesta = TestClient(app).get("/")
-          assert respuesta.status_code == 200, respuesta.status_code
-          print("La aplicación arranca y responde en /")
-          PY
+  estatica:
+    name: Calidad estática (Ruff, mypy, Radon, Bandit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/preparar
 
       - name: Calidad (Ruff)
         run: |
@@ -65,27 +62,71 @@ jobs:
           vulture
           pylint rutas api main.py --disable=all --enable=duplicate-code --score=n
 
+      - name: Complejidad y mantenibilidad (Radon)
+        # Falla si alguna función tiene rango C o peor (complejidad > 10) o
+        # si algún archivo tiene un índice de mantenibilidad de rango C.
+        # Ruff (C90) ya limita a 10; Radon lo confirma con otra herramienta
+        # y suma el índice de mantenibilidad. El informe JSON se guarda.
+        run: |
+          radon cc rutas api main.py -a -s -j > radon-cc.json
+          radon mi rutas api main.py -s -j > radon-mi.json
+          radon cc rutas api main.py -a -s -nb
+          radon mi rutas api main.py -s -nb
+          peores_cc=$(radon cc rutas api main.py -nc)
+          peores_mi=$(radon mi rutas api main.py -nc)
+          if [ -n "$peores_cc$peores_mi" ]; then
+            echo "::error::Radon: hay funciones o archivos de rango C o peor"
+            echo "$peores_cc"
+            echo "$peores_mi"
+            exit 1
+          fi
+
       - name: Seguridad del código (Bandit)
         # Falla con severidad media o alta; las bajas (subprocess con
-        # argumentos fijos, random sin fines criptográficos) se aceptan.
+        # argumentos fijos, random sin fines criptográficos) se aceptan y
+        # están justificadas en docs/calidad.rst. El JSON se escribe primero
+        # para que quede aunque el paso falle.
         run: |
+          estado=0
+          bandit -r rutas api main.py -ll -q -f json -o bandit.json || estado=$?
           bandit -r rutas api main.py -ll
-          bandit -r rutas api main.py -ll -q -f json -o bandit.json
-
-      - name: Seguridad de dependencias (pip-audit)
-        # Falla ante cualquier vulnerabilidad conocida en requirements.txt.
-        # El informe JSON se guarda aunque falle.
-        run: |
-          set +e
-          pip-audit -r requirements.txt -f json -o pip-audit.json
-          estado=$?
-          python -m json.tool pip-audit.json | head -60
           exit $estado
 
-      - name: Documentación (Sphinx sin advertencias)
-        # -W convierte cualquier advertencia (enlace roto, referencia
-        # inexistente) en error.
-        run: python -m sphinx -b html -q -W docs docs/_build/html
+      - name: Guardar evidencias
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidencias-estatica
+          retention-days: 14
+          path: |
+            bandit.json
+            radon-cc.json
+            radon-mi.json
+
+  pruebas:
+    name: Pruebas y cobertura (pytest, Sonar)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      # coverage usa sys.monitoring y no choca con los perfiladores.
+      COVERAGE_CORE: sysmon
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # SonarQube necesita el historial completo
+      - uses: ./.github/actions/preparar
+
+      - name: Verificar que la aplicación arranca
+        run: |
+          python - <<'PY'
+          from fastapi.testclient import TestClient
+          from api.app import app
+
+          respuesta = TestClient(app).get("/")
+          assert respuesta.status_code == 200, respuesta.status_code
+          print("La aplicación arranca y responde en /")
+          PY
 
       - name: Pruebas y cobertura mínima
         # Falla si una prueba falla o si la cobertura baja del fail_under de
@@ -107,22 +148,15 @@ jobs:
           print(f"| {r['total']} | {r['aprobadas']} | {r['fallidas']} | {r['errores']} | {r['segundos']} |")
           PY
 
-      - name: Performance Gate
-        # Dijkstra sobre 100.000 nodos: falla (y muestra "Performance Gate
-        # FAILED") si la mediana por consulta supera los 500 ms. El umbral y
-        # su justificación están en rutas/performance_gate.py.
-        run: python -m rutas.performance_gate
-
       - name: Guardar evidencias
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: resultados
+          name: evidencias-pruebas
+          retention-days: 14
           path: |
             resultados.xml
             coverage.xml
-            bandit.json
-            pip-audit.json
 
       - name: Análisis con SonarQube Cloud
         # Sin el secret (por ejemplo en PRs desde forks) este paso se omite.
@@ -131,3 +165,145 @@ jobs:
         with:
           # Falla el pipeline si el Quality Gate no se cumple.
           args: -Dsonar.qualitygate.wait=true
+
+  seguridad_y_docs:
+    name: Dependencias y documentación (pip-audit, MkDocs, Sphinx)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/preparar
+
+      - name: Seguridad de dependencias (pip-audit)
+        # Falla ante cualquier vulnerabilidad conocida en requirements.txt.
+        # El informe JSON se guarda aunque falle.
+        run: |
+          set +e
+          pip-audit -r requirements.txt -f json -o pip-audit.json
+          estado=$?
+          python -m json.tool pip-audit.json | head -60
+          exit $estado
+
+      - name: Documentación externa (MkDocs estricto)
+        # --strict convierte en error cualquier advertencia: enlace a una
+        # página o ancla que no existe, archivo fuera de la navegación.
+        run: mkdocs build --strict
+
+      - name: Documentación interna (Sphinx sin advertencias)
+        # -W convierte cualquier advertencia (referencia inexistente,
+        # docstring mal formado) en error.
+        run: python -m sphinx -b html -q -W docs docs/_build/html
+
+      - name: Enlaces externos de la documentación (Lychee)
+        # Falla si algún enlace externo no responde. Se ignoran las
+        # direcciones locales de los ejemplos.
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: >-
+            --no-progress --exclude 127.0.0.1 --exclude localhost
+            './documentacion/**/*.md' './README.md'
+          fail: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Guardar evidencias
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidencias-seguridad-docs
+          retention-days: 14
+          path: |
+            pip-audit.json
+            requirements-resuelto.txt
+
+  rendimiento:
+    name: Rendimiento y memoria (benchmark, profiling)
+    # Es la etapa más costosa: solo corre si las anteriores aprobaron.
+    needs: [secretos, estatica, pruebas, seguridad_y_docs]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/preparar
+
+      - name: Performance Gate
+        # Dijkstra sobre 100.000 nodos: falla (y muestra "Performance Gate
+        # FAILED") si la mediana por consulta supera los 500 ms. El umbral y
+        # su justificación están en rutas/performance_gate.py.
+        run: python -m rutas.performance_gate
+
+      - name: Memory Gate
+        # Mismo grafo: falla si el pico de memoria supera 32 MiB. La
+        # medición es determinista (tracemalloc); ver rutas/memory_gate.py.
+        run: python -m rutas.memory_gate
+
+      - name: Profiling de CPU (cProfile)
+        # Informativo: deja un .prof por algoritmo (para SnakeViz) y un
+        # resumen. No bloquea; el bloqueo por CPU lo hace el Performance Gate.
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          from rutas.perfilado import ejecutar_perfilado
+
+          carpeta = Path("perfiles")
+          perfiles = ejecutar_perfilado(carpeta_prof=carpeta)
+          lineas = [
+              "### Profiling de CPU (cProfile)\n",
+              "| Algoritmo | Función | Llamadas | Tiempo propio (s) |",
+              "|---|---|---|---|",
+          ]
+          for nombre, filas in perfiles.items():
+              for fila in filas[:3]:
+                  lineas.append(
+                      f"| {nombre} | `{fila.funcion}` | {fila.llamadas} | "
+                      f"{fila.tiempo_propio:.4f} |"
+                  )
+          informe = "\n".join(lineas) + "\n"
+          (carpeta / "resumen.md").write_text(informe, encoding="utf-8")
+          destino = os.environ.get("GITHUB_STEP_SUMMARY")
+          if destino:
+              with Path(destino).open("a", encoding="utf-8") as archivo:
+                  archivo.write(informe)
+          print(informe)
+          PY
+
+      - name: Guardar evidencias
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidencias-rendimiento
+          retention-days: 14
+          path: perfiles/
+
+  resultado:
+    name: Resultado final
+    # Este es el check que debe exigir la protección de la rama main.
+    needs: [secretos, estatica, pruebas, seguridad_y_docs, rendimiento]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Aprobado o rechazado
+        env:
+          RESULTADOS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          {
+            echo "### Resultado del pipeline"
+            echo
+            echo "| Etapa | Estado |"
+            echo "|---|---|"
+            echo "| Secretos | ${{ needs.secretos.result }} |"
+            echo "| Calidad estática | ${{ needs.estatica.result }} |"
+            echo "| Pruebas y cobertura | ${{ needs.pruebas.result }} |"
+            echo "| Dependencias y documentación | ${{ needs.seguridad_y_docs.result }} |"
+            echo "| Rendimiento y memoria | ${{ needs.rendimiento.result }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          for estado in $RESULTADOS; do
+            if [ "$estado" != "success" ]; then
+              echo "::error::RECHAZADO: alguna etapa no terminó en success"
+              exit 1
+            fi
+          done
+          echo "APROBADO: todas las etapas pasaron"
