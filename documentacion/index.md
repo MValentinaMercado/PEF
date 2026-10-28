@@ -25,5 +25,5 @@ La referencia de módulos, clases y funciones se genera con Sphinx a partir de l
 ```bash
 pip install -r requirements.txt
 python main.py        # aplicación en http://127.0.0.1:8000
-mkdocs serve          # esta documentación en http://127.0.0.1:8001
+mkdocs serve -a 127.0.0.1:8001   # esta documentación en http://127.0.0.1:8001
 ```

@@ -1,7 +1,7 @@
 """Aplicación FastAPI: API REST + páginas HTML estáticas.
 
 Ejecutar con ``python main.py`` o ``uvicorn api.app:app --reload``. Al
-arrancar genera la documentación Sphinx si todavía no existe.
+arrancar genera las documentaciones (Sphinx y MkDocs) si todavía no existe.
 """
 
 import logging
@@ -57,6 +57,11 @@ app.mount(
     StaticFiles(directory=documentacion.SALIDA, html=True),
     name="sphinx",
 )
+app.mount(
+    "/mkdocs",
+    StaticFiles(directory=documentacion.SALIDA_EXTERNA, html=True),
+    name="mkdocs",
+)
 
 
 def _pagina(nombre: str) -> FileResponse:
@@ -95,5 +100,5 @@ def ventana_calidad() -> FileResponse:
 
 @app.get("/documentacion", include_in_schema=False)
 def ventana_documentacion() -> FileResponse:
-    """Documentación generada con Sphinx."""
+    """Documentación interna (Sphinx) y externa (MkDocs)."""
     return _pagina("documentacion.html")

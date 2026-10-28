@@ -35,7 +35,7 @@ Hay dos documentaciones, cada una con su herramienta:
 | Interna (referencia del código) | Sphinx       | `docs/`          | Módulos, clases y funciones, generados de los *docstrings*.     |
 
 ```bash
-mkdocs serve                                   # este sitio en http://127.0.0.1:8001
+mkdocs serve -a 127.0.0.1:8001                # este sitio en http://127.0.0.1:8001
 python -m sphinx -b html docs docs/_build/html # referencia interna
 ```
 

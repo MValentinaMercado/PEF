@@ -59,7 +59,7 @@ Cobertura de la documentación externa (los 9 puntos del enunciado):
 | Mantenimiento y cómo correr los controles del CI en local | `mantenimiento.md` |
 
 ```bash
-mkdocs serve                                           # externa en http://127.0.0.1:8001
+mkdocs serve -a 127.0.0.1:8001                         # externa en http://127.0.0.1:8001
 mkdocs build --strict                                  # como en el CI
 python -m sphinx -b html -q -W docs docs/_build/html   # interna
 ```

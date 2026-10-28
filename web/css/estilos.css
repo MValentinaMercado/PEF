@@ -560,7 +560,8 @@ dialog menu {
 
 /* ---------- Visores incrustados ---------- */
 
-#marco-docs {
+#marco-docs,
+#marco-externa {
   width: 100%;
   height: 75vh;
   border: 1px solid var(--borde);

@@ -20,50 +20,84 @@
 </header>
 <main>
   <section>
-    <h2 data-api="GET /api/documentacion/estado|POST /api/documentacion/generar" data-cmd="python -m sphinx -b html docs docs/_build/html">Documentación técnica</h2>
+    <h2 data-api="GET /api/documentacion/estado|POST /api/documentacion/generar" data-cmd="python -m sphinx -b html docs docs/_build/html">Documentación interna (Sphinx)</h2>
     <p>
-      La documentación técnica se genera automáticamente a partir de los
+      Referencia técnica generada automáticamente a partir de los
       <em>docstrings</em> del código fuente con <code>Sphinx</code> y la extensión
       <code>sphinx.ext.autodoc</code>, que extrae la información de módulos, clases y
       funciones.
     </p>
     <div class="barra">
-      <button id="btn-generar">Regenerar documentación</button>
+      <button id="btn-generar">Regenerar documentación interna</button>
       <a id="enlace-nueva" href="/sphinx/index.html" target="_blank"
          rel="noopener">Abrir en una pestaña nueva</a>
       <span class="estado" id="estado-docs"></span>
     </div>
-    <iframe id="marco-docs" title="Documentación Sphinx"
+    <iframe id="marco-docs" title="Documentación interna (Sphinx)"
             src="/sphinx/index.html"></iframe>
+  </section>
+
+  <section>
+    <h2 data-api="GET /api/documentacion/externa/estado|POST /api/documentacion/externa/generar" data-cmd="mkdocs build --strict">Documentación externa (MkDocs)</h2>
+    <p>
+      Documentación para quien usa o mantiene la aplicación: descripción
+      funcional, arquitectura, instalación, diseño, API, pruebas, rendimiento y
+      seguridad. Está escrita en Markdown y se genera con
+      <code>MkDocs Material</code>.
+    </p>
+    <div class="barra">
+      <button id="btn-generar-externa">Regenerar documentación externa</button>
+      <a id="enlace-externa" href="/mkdocs/index.html" target="_blank"
+         rel="noopener">Abrir en una pestaña nueva</a>
+      <span class="estado" id="estado-externa"></span>
+    </div>
+    <iframe id="marco-externa" title="Documentación externa (MkDocs)"
+            src="/mkdocs/index.html"></iframe>
   </section>
 </main>
 <script src="/estatico/js/comun.js"></script>
 <script>
 const el = id => document.getElementById(id);
-const marco = el("marco-docs"), estado = el("estado-docs");
 
-function mostrarEstado(datos) {
-  estado.className = "estado";
-  estado.textContent = datos.disponible
-    ? "Generada el " + datos.generada : "Todavía no está generada.";
-  marco.hidden = !datos.disponible;
+/** Conecta un visor, su botón y su estado con los endpoints de una documentación. */
+function configurar({ marco, estado, boton, prefijo, visor, herramienta }) {
+  const marcoEl = el(marco), estadoEl = el(estado);
+
+  function mostrarEstado(datos) {
+    estadoEl.className = "estado";
+    estadoEl.textContent = datos.disponible
+      ? "Generada el " + datos.generada : "Todavía no está generada.";
+    marcoEl.hidden = !datos.disponible;
+  }
+
+  el(boton).addEventListener("click", async evento => {
+    const btn = evento.currentTarget;
+    btn.disabled = true;
+    estadoEl.className = "estado";
+    estadoEl.textContent = "Generando con " + herramienta + "…";
+    try {
+      mostrarEstado(await api("POST", prefijo + "/generar"));
+      marcoEl.src = visor + "?r=" + Date.now();
+    } catch (error) {
+      estadoEl.className = "estado error";
+      estadoEl.textContent = error.message;
+    }
+    btn.disabled = false;
+  });
+
+  api("GET", prefijo + "/estado").then(mostrarEstado);
 }
 
-el("btn-generar").addEventListener("click", async evento => {
-  const boton = evento.currentTarget;
-  boton.disabled = true;
-  estado.textContent = "Generando con Sphinx…";
-  try {
-    mostrarEstado(await api("POST", "/api/documentacion/generar"));
-    marco.src = "/sphinx/index.html?r=" + Date.now();
-  } catch (error) {
-    estado.className = "estado error";
-    estado.textContent = error.message;
-  }
-  boton.disabled = false;
+configurar({
+  marco: "marco-docs", estado: "estado-docs", boton: "btn-generar",
+  prefijo: "/api/documentacion", visor: "/sphinx/index.html",
+  herramienta: "Sphinx",
 });
-
-api("GET", "/api/documentacion/estado").then(mostrarEstado);
+configurar({
+  marco: "marco-externa", estado: "estado-externa", boton: "btn-generar-externa",
+  prefijo: "/api/documentacion/externa", visor: "/mkdocs/index.html",
+  herramienta: "MkDocs",
+});
 </script>
 </body>
 </html>
