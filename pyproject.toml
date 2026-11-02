@@ -3,7 +3,7 @@
 [tool.ruff]
 line-length = 79
 target-version = "py312"
-extend-exclude = ["docs/_build", "perfiles"]
+extend-exclude = ["docs/_build", "site", "perfiles"]
 
 [tool.ruff.lint]
 # E/W: estilo pycodestyle · F: errores (imports sin usar, nombres) · I: orden de imports
@@ -27,10 +27,14 @@ max-complexity = 10
 # archivos. "include" limita la medición a estas carpetas.
 include = ["api/*", "rutas/*"]
 relative_files = true
+# sys.monitoring no choca con memory_profiler ni line_profiler (que usan
+# sys.settrace): sin esto el doctest de ejecutar_perfilado_memoria falla al
+# medir cobertura. Así local y CI se comportan igual.
+core = "sysmon"
 
 [tool.coverage.report]
-# Umbral mínimo de cobertura (el enunciado exige 80 %; el equipo usa 90 %):
-# si baja de aquí, el pipeline falla.
+# Umbral mínimo de cobertura definido por el equipo (hoy la cobertura real
+# supera el 99 %): si baja de aquí, el pipeline falla.
 fail_under = 80
 show_missing = true
 # El arranque `if __name__ == "__main__":` solo corre desde la consola.

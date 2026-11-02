@@ -406,3 +406,23 @@ def test_trabajador_mide_el_pico_de_memoria(monkeypatch, grafo_ejemplo):
     finally:
         concurrencia.tracemalloc.stop()
         monkeypatch.setattr(concurrencia, "_grafo_trabajo", None)
+
+
+def test_documentacion_externa_informa_estado(tmp_path, monkeypatch):
+    monkeypatch.setattr(documentacion, "SALIDA_EXTERNA", tmp_path)
+    assert documentacion.estado_externa() == {
+        "disponible": False,
+        "generada": None,
+    }
+    (tmp_path / "index.html").write_text("<html></html>", encoding="utf-8")
+    assert documentacion.estado_externa()["disponible"] is True
+
+
+def test_construir_externa_lanza_error_si_mkdocs_falla(monkeypatch):
+    monkeypatch.setattr(
+        documentacion.subprocess,
+        "run",
+        lambda *a, **k: subprocess.CompletedProcess(a, 1, "salida", "error"),
+    )
+    with pytest.raises(RuntimeError, match="error"):
+        documentacion.construir_externa()

@@ -1,14 +1,11 @@
 /* Ventana 2: ejecuta las mediciones reales y las muestra. */
-const el = (id) => document.getElementById(id);
 const MIL = (n) => Number(n).toLocaleString("es-AR");
-const GRAFICOS = [
-  ["tiempo_ms", "Tiempo medio (ms)"],
-  ["memoria_kb", "Memoria pico (KB)"],
-  ["nodos_explorados", "Nodos explorados"],
-];
 
-/** Conecta un botón con un endpoint y una función que muestra el resultado. */
-function enlazar(nombre, mostrar) {
+/**
+ * Conecta un botón con un endpoint y una función que muestra el resultado.
+ * El botón es "btn-<nombre>" y el endpoint "/api/analisis/<ruta>".
+ */
+function enlazar(nombre, mostrar, ruta = nombre) {
   const boton = el("btn-" + nombre),
     estado = el("estado-" + nombre);
   const ejecutar = async () => {
@@ -17,7 +14,7 @@ function enlazar(nombre, mostrar) {
     estado.textContent = "Ejecutando…";
     const inicio = performance.now();
     try {
-      mostrar(await api("POST", "/api/analisis/" + nombre));
+      mostrar(await api("POST", "/api/analisis/" + ruta));
       estado.textContent =
         "Listo en " + fmt((performance.now() - inicio) / 1000, 1) + " s.";
     } catch (error) {
@@ -324,7 +321,7 @@ function descomposicion(filas, desde = 10000, hasta = 100000) {
   });
 }
 
-const ejecutarEscalabilidad = enlazar("escalabilidad", ({ filas, grafos }) => {
+enlazar("escalabilidad", ({ filas, grafos }) => {
   el("grafico-escalabilidad").innerHTML = graficoEscalabilidad(filas);
   llenarTabla(
     el("tabla-escalabilidad").querySelector("tbody"),
@@ -373,8 +370,6 @@ const ejecutarLineas = enlazar("lineas", (algoritmos) => {
 });
 
 const ejecutarScalene = enlazar("scalene", (resultado) => {
-  const ficha = (titulo, valor) =>
-    `<div class="ficha"><b>${esc(valor)}</b>${esc(titulo)}</div>`;
   el("resumen-scalene").innerHTML =
     ficha("segundos (con el perfilador)", fmt(resultado.segundos, 1)) +
     ficha("memoria pico (MB)", fmt(resultado.memoria_pico_mb, 1)) +
@@ -393,7 +388,7 @@ const ejecutarScalene = enlazar("scalene", (resultado) => {
   );
 });
 
-const ejecutarPrediccion = enlazar("prediccion", (datos) => {
+enlazar("prediccion", (datos) => {
   const mejor = (e) => e.reduce((a, b) => (b.error_medio_pct < a.error_medio_pct ? b : a));
   el("resumen-prediccion").innerHTML =
     `<div class="ficha"><b>${datos.entrenamiento}</b>muestras de entrenamiento</div>` +
@@ -454,6 +449,88 @@ el("btn-recomendar").addEventListener("click", async () => {
     texto.textContent = error.message;
   }
 });
+
+/** Aviso cuando la medición tuvo que entrenar el modelo antes. */
+const avisoEntrenado = (datos) =>
+  datos.entrenado_ahora
+    ? "El modelo no estaba entrenado: se entrenó antes de medir. "
+    : "";
+
+enlazar(
+  "modelo-entrenamiento",
+  (d) => {
+    el("resumen-modelo-entrenamiento").innerHTML =
+      ficha("muestras medidas", MIL(d.muestras)) +
+      ficha("s para medir los datos", fmt(d.recoleccion_s, 1)) +
+      ficha("ms para ajustar (fit)", fmt(d.ajuste_ms, 1)) +
+      ficha("KB de memoria pico", fmt(d.memoria_ajuste_kb, 0)) +
+      ficha("KB pesa el modelo", fmt(d.tamano_modelo_bytes / 1024, 1));
+    el("conclusion-modelo-entrenamiento").textContent = d.conclusion;
+  },
+  "modelo/entrenamiento",
+);
+
+enlazar(
+  "modelo-precision",
+  (d) => {
+    llenarTabla(
+      el("tabla-modelo-precision").querySelector("tbody"),
+      d.filas.map((f) => [
+        f.algoritmo,
+        { t: f.grafos, n: true },
+        { t: fmt(f.mae_ms, 2), n: true },
+        { t: fmt(f.error_medio_pct, 1), n: true },
+        { t: fmt(f.mae_referencia_ms, 2), n: true },
+        { t: fmt(f.error_referencia_pct, 1), n: true },
+      ]),
+    );
+    el("conclusion-modelo-precision").textContent =
+      avisoEntrenado(d) + d.conclusion;
+  },
+  "modelo/precision",
+);
+
+enlazar(
+  "modelo-latencia",
+  (d) => {
+    el("resumen-modelo-latencia").innerHTML =
+      ficha("µs por predicción", fmt(d.prediccion_us, 0)) +
+      ficha("µs por recomendación", fmt(d.recomendacion_us, 0)) +
+      ficha("KB de memoria pico", fmt(d.memoria_kb, 1));
+    el("conclusion-modelo-latencia").textContent =
+      avisoEntrenado(d) + d.conclusion;
+  },
+  "modelo/latencia",
+);
+
+enlazar(
+  "modelo-comparacion",
+  (d) => {
+    llenarTabla(
+      el("tabla-modelo-comparacion").querySelector("tbody"),
+      d.filas.map((f) => [
+        { t: MIL(f.nodos), n: true },
+        { t: MIL(f.aristas), n: true },
+        { t: fmt(f.directo_ms, 3), n: true },
+        { t: fmt(f.predicho_ms, 3), n: true },
+        { t: fmt(f.error_pct, 1), n: true },
+        { t: fmt(f.prediccion_us, 0), n: true },
+        { t: fmt(f.veces_mas_rapida, 1), n: true },
+      ]),
+    );
+    el("resumen-modelo-comparacion").innerHTML =
+      ficha("s costó entrenar", fmt(d.costo_entrenamiento_ms / 1000, 1)) +
+      ficha(
+        "estimaciones para amortizar",
+        d.estimaciones_para_amortizar === null
+          ? "nunca"
+          : MIL(d.estimaciones_para_amortizar),
+      );
+    el("conclusion-modelo-comparacion").textContent =
+      avisoEntrenado(d) + d.conclusion;
+  },
+  "modelo/comparacion",
+);
 
 // Al abrir la ventana se ejecuta todo (uno por vez: las mediciones no
 // deben solaparse); los botones sirven para repetir una medición.

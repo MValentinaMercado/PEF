@@ -1,4 +1,5 @@
 /* Utilidades compartidas por todas las ventanas. */
+const el = (id) => document.getElementById(id);
 const COLORES = { BFS: "#e8b04a", Dijkstra: "#4cc38a", "A*": "#ef6f6c" };
 
 /** Llama a la API y devuelve el JSON; lanza Error con el detalle. */
@@ -48,6 +49,14 @@ function llenarTabla(tbody, filas) {
         "</tr>",
     )
     .join("");
+}
+
+/** Ficha de resultado: un valor destacado y su título (clase: ok o mal). */
+function ficha(titulo, valor, clase = "") {
+  return (
+    `<div class="ficha"><b class="${clase}">${esc(valor)}</b>` +
+    `${esc(titulo)}</div>`
+  );
 }
 
 /** Formatea un número con separador de miles al estilo es-AR. */

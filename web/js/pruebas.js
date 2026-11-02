@@ -1,5 +1,4 @@
 /* Ventana 3: ejecuta la suite de pruebas y muestra el resultado. */
-const el = (id) => document.getElementById(id);
 let datos = null;
 
 const ETIQUETA = {
@@ -8,13 +7,6 @@ const ETIQUETA = {
   error: ["mal", "error"],
   omitida: ["", "omitida"],
 };
-
-function ficha(titulo, valor, clase = "") {
-  return (
-    `<div class="ficha"><b class="${clase}">${valor}</b>` +
-    `${esc(titulo)}</div>`
-  );
-}
 
 function mostrar() {
   const malas = datos.fallidas + datos.errores;

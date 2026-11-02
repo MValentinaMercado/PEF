@@ -143,7 +143,8 @@ def perfilar_lineas(
     consultas: Sequence[Consulta],
     funcion: Callable | None = None,
 ) -> list[FilaLinea]:
-    """Mide el tiempo de cada línea de ``funcion`` mientras corre ``algoritmo``.
+    """Mide el tiempo de cada línea de ``funcion`` al correr
+    ``algoritmo``.
 
     ``funcion`` es la función que se mide; si se omite, se mide el algoritmo.
     Se utiliza ``line_profiler``.

@@ -1,0 +1,53 @@
+name: Documentación
+
+# Publica en GitHub Pages un único sitio con las dos documentaciones cuando
+# cambia main:
+#   - raíz:     documentación externa (MkDocs, carpeta documentacion/)
+#   - /interna: referencia del código (Sphinx, carpeta docs/)
+# Requiere: Settings > Pages > Source: GitHub Actions.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  construir:
+    name: Construir
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/preparar
+
+      - name: Documentación externa (MkDocs, sin advertencias)
+        run: mkdocs build --strict
+
+      - name: Referencia interna (Sphinx, sin advertencias)
+        run: python -m sphinx -b html -q -W docs site/interna
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  publicar:
+    name: Publicar
+    needs: construir
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.despliegue.outputs.page_url }}
+    steps:
+      - id: despliegue
+        uses: actions/deploy-pages@v4

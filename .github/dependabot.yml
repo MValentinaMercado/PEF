@@ -5,8 +5,11 @@ updates:
     directory: /
     schedule:
       interval: weekly
-  # Versiones de las acciones usadas por el pipeline.
+  # Versiones de las acciones usadas por el pipeline (el workflow y la
+  # acción compuesta que prepara el entorno).
   - package-ecosystem: github-actions
-    directory: /
+    directories:
+      - /
+      - /.github/actions/preparar
     schedule:
       interval: weekly

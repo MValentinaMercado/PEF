@@ -12,4 +12,12 @@ resultados.xml
 .ruff_cache/
 .scannerwork/
 docs/_build/
+site/
 perfiles/*.prof
+perfiles/resumen.md
+
+# Informes que genera el pipeline
+bandit.json
+pip-audit.json
+radon-*.json
+requirements-resuelto.txt

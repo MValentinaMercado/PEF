@@ -1,6 +1,9 @@
 Referencia del código
 =====================
 
+Lógica (módulos ``rutas``)
+--------------------------
+
 .. automodule:: rutas.grafo
    :members:
 
@@ -34,6 +37,9 @@ Referencia del código
 .. automodule:: rutas.prediccion
    :members:
 
+.. automodule:: rutas.evaluacion_modelo
+   :members:
+
 .. automodule:: rutas.perfilado
    :members:
 
@@ -47,4 +53,40 @@ Referencia del código
    :members:
 
 .. automodule:: rutas.informacion
+   :members:
+
+.. automodule:: rutas.performance_gate
+   :members:
+
+.. automodule:: rutas.memory_gate
+   :members:
+
+API (módulos ``api``)
+---------------------
+
+.. automodule:: api.grafo_router
+   :members:
+
+.. automodule:: api.analisis_router
+   :members:
+
+.. automodule:: api.esquemas
+   :members:
+
+.. automodule:: api.pruebas_router
+   :members:
+
+.. automodule:: api.calidad_router
+   :members:
+
+.. automodule:: api.ci_github
+   :members:
+
+.. automodule:: api.documentacion
+   :members:
+
+.. automodule:: api.visor_perfiles
+   :members:
+
+.. automodule:: api.estado
    :members:

@@ -1,4 +1,4 @@
-# Rutas en grafos: BFS, Dijkstra y A*
+# Rutas en grafos: BFS, Dijkstra y A\*
 
 Aplicación web desarrollada con **FastAPI** para construir grafos, buscar rutas mediante **BFS, Dijkstra y A\*** y analizar su rendimiento, escalabilidad y calidad.
 
@@ -42,7 +42,7 @@ La aplicación permite:
 
 - Crear y editar grafos.
 - Buscar rutas entre nodos.
-- Ejecutar BFS, Dijkstra y A*.
+- Ejecutar BFS, Dijkstra y A\*.
 - Comparar algoritmos.
 - Analizar rendimiento y escalabilidad.
 - Ejecutar benchmarks con grafos de hasta 100.000 nodos.
@@ -109,20 +109,20 @@ http://127.0.0.1:8000/docs
 
 ## Ventanas de la aplicación
 
-| Ventana | Ruta | Contenido |
-|---|---|---|
-| Editor | `/` | Editor del grafo, búsqueda de rutas y comparación de algoritmos. |
-| Análisis | `/analisis` | Benchmark, escalabilidad, caché, concurrencia y perfilado. |
-| Optimización | `/optimizacion` | Análisis de código redundante y refactorización. |
-| Pruebas | `/pruebas` | Ejecución y visualización de la suite de pruebas. |
-| Calidad | `/calidad` | Quality Gate de SonarQube Cloud y estado del CI. |
-| Documentación | `/documentacion` | Referencia interna del código mediante Sphinx. |
+| Ventana       | Ruta             | Contenido                                                        |
+| ------------- | ---------------- | ---------------------------------------------------------------- |
+| Editor        | `/`              | Editor del grafo, búsqueda de rutas y comparación de algoritmos. |
+| Análisis      | `/analisis`      | Benchmark, escalabilidad, caché, concurrencia y perfilado.       |
+| Optimización  | `/optimizacion`  | Análisis de código redundante y refactorización.                 |
+| Pruebas       | `/pruebas`       | Ejecución y visualización de la suite de pruebas.                |
+| Calidad       | `/calidad`       | Quality Gate de SonarQube Cloud y estado del CI.                 |
+| Documentación | `/documentacion` | Referencia interna del código mediante Sphinx.                   |
 
 ## Puertos
 
-| Puerto | Uso |
-|---|---|
-| `8000` | Aplicación web y API. |
+| Puerto | Uso                                                  |
+| ------ | ---------------------------------------------------- |
+| `8000` | Aplicación web y API.                                |
 | `8081` | Servidor de SnakeViz utilizado durante el perfilado. |
 
 ## Estructura del proyecto
@@ -168,9 +168,9 @@ O((V + E) log V)
 
 Esto permite trabajar con grafos de gran tamaño.
 
-### A*
+### A\*
 
-A* utiliza una heurística junto con una cola de prioridad para orientar la búsqueda hacia el destino.
+A\* utiliza una heurística junto con una cola de prioridad para orientar la búsqueda hacia el destino.
 
 La implementación comparte la lógica común de búsqueda con Dijkstra y permite evitar duplicación de código.
 
@@ -180,14 +180,14 @@ Las optimizaciones se incorporaron a partir de mediciones y no solamente de supo
 
 Entre las principales decisiones se encuentran:
 
-- Uso de `heapq` en Dijkstra y A*.
+- Uso de `heapq` en Dijkstra y A\*.
 - Uso de `set` para los nodos cerrados.
 - Uso de `deque` en BFS.
 - Caché acotada para rutas calculadas.
 - Paralelización únicamente para lotes de consultas.
 - Uso de procesos cuando el trabajo puede beneficiarse del paralelismo de CPU.
 - Separación de mediciones de tiempo y memoria.
-- Refactorización de código común entre Dijkstra y A*.
+- Refactorización de código común entre Dijkstra y A\*.
 
 Las decisiones técnicas y sus mediciones están documentadas en:
 
@@ -374,7 +374,7 @@ git status
 El proyecto integra:
 
 - Aplicación web con FastAPI.
-- Algoritmos BFS, Dijkstra y A*.
+- Algoritmos BFS, Dijkstra y A\*.
 - Pruebas automatizadas.
 - Cobertura de código.
 - Análisis estático.
@@ -387,4 +387,3 @@ El proyecto integra:
 - Documentación interna con Sphinx.
 - Integración Continua con GitHub Actions.
 - Publicación automática de documentación mediante GitHub Pages.
-

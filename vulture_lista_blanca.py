@@ -56,3 +56,6 @@ campos_de_filas.exponente_aristas
 campos_de_filas.aciertos_regla_fija
 campos_de_filas.regla_fija
 campos_de_filas.predicciones_ms
+
+# rutas/evaluacion_modelo.py: filas de la evaluación del costo del modelo
+campos_de_filas.mae_referencia_ms
