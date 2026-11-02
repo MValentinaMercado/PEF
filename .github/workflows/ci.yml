@@ -192,16 +192,17 @@ jobs:
       - name: Documentación interna (Sphinx sin advertencias)
         # -W convierte cualquier advertencia (referencia inexistente,
         # docstring mal formado) en error.
-        run: python -m sphinx -b html -q -W docs docs/_build/html
+        run: python -m sphinx -b html -q -W docs site/interna
 
       - name: Enlaces externos de la documentación (Lychee)
-        # Falla si algún enlace externo no responde. Se ignoran las
-        # direcciones locales de los ejemplos.
+        # Revisa el sitio ya construido (MkDocs + Sphinx) para validar también
+        # los enlaces cruzados hacia /interna. Se ignoran las direcciones
+        # locales de los ejemplos.
         uses: lycheeverse/lychee-action@v2
         with:
           args: >-
             --no-progress --exclude 127.0.0.1 --exclude localhost
-            './documentacion/**/*.md' './README.md'
+            './site/**/*.html' './README.md'
           fail: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
