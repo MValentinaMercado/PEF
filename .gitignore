@@ -21,3 +21,4 @@ bandit.json
 pip-audit.json
 radon-*.json
 requirements-resuelto.txt
+log_ci.txt
