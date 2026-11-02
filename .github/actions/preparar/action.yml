@@ -4,7 +4,7 @@ description: Instala Python y las dependencias del proyecto (etapa 2 del pipelin
 runs:
   using: composite
   steps:
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@v7
       with:
         python-version: "3.12"
         cache: pip
