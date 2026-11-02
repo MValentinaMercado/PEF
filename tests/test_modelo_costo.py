@@ -165,7 +165,9 @@ def test_la_comparacion_nombra_los_tamanos_donde_predecir_pierde():
 
 def test_la_conclusion_es_determinista():
     fila = ev.FilaPrecision("BFS", 5, 1.0, 20.0, 3.0, 90.0)
-    assert ev.concluir_precision([fila]) == ev.concluir_precision([fila])
+    primera = ev.concluir_precision([fila])
+    segunda = ev.concluir_precision([fila])
+    assert primera == segunda
 
 
 # --- API: cada botón funciona solo -----------------------------------------
