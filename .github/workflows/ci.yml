@@ -201,8 +201,12 @@ jobs:
         uses: lycheeverse/lychee-action@v2
         with:
           args: >-
-            --no-progress --exclude 127.0.0.1 --exclude localhost
-            './site/**/*.html' './README.md'
+            --no-progress
+            --root-dir "${{ github.workspace }}/site"
+            --exclude 127.0.0.1
+            --exclude localhost
+            './site/**/*.html'
+            './README.md'
           fail: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
