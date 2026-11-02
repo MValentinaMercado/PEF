@@ -8,6 +8,16 @@ name: Documentación
 on:
   push:
     branches: [main]
+    paths:
+      - "documentacion/**"
+      - "docs/**"
+      - "mkdocs.yml"
+      - "rutas/**"
+      - "api/**"
+      - "main.py"
+      - "requirements.txt"
+      - ".github/workflows/docs.yml"
+      - ".github/actions/preparar/**"
   workflow_dispatch:
 
 permissions:
