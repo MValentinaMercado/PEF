@@ -119,6 +119,17 @@ pip-audit -r requirements.txt
 pytest --cov --cov-report=xml
 ```
 
+## Estado del pipeline en la ventana Calidad
+
+Además del Quality Gate de SonarQube, la ventana **Calidad** muestra el resultado real de la última corrida de `ci.yml` en `main`: veredicto, etapas con su duración, el paso que falló (por ejemplo, `Seguridad del código (Bandit)`), el historial de las últimas 10 corridas y un enlace a los registros completos en GitHub Actions. No ejecuta ni simula nada: lee la API de GitHub desde el servidor (`api.ci_github`).
+
+| Variable de entorno | Para qué sirve |
+|---|---|
+| `GITHUB_REPOSITORY` | `usuario/repositorio` a consultar. Si falta, se toma el remoto `origin` de `.git/config`. |
+| `GITHUB_TOKEN` | Opcional en repositorios públicos; obligatorio en privados. Debe tener solo lectura de Actions. Nunca se envía al navegador. |
+
+La conclusión de la ventana la redacta el código con reglas fijas a partir de los estados reales (aprobada, rechazada o en curso, y qué etapas fallaron).
+
 ## API de la ventana
 
-El módulo `api.calidad_router` consulta SonarQube Cloud. Su referencia (funciones, parámetros y variables de entorno) está en la <a href="../interna/referencia.html#api-modulos-api">Referencia del código</a>.
+Los módulos `api.calidad_router` (SonarQube Cloud) y `api.ci_github` (GitHub Actions) consultan servicios externos. Su referencia (funciones, parámetros y variables de entorno) está en la <a href="../interna/referencia.html#api-modulos-api">Referencia del código</a>.

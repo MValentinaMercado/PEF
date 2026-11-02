@@ -1,8 +1,8 @@
 """Endpoints de la ventana Análisis.
 
 Incluye benchmark, escalabilidad, caché, concurrencia, entrada/salida,
-perfilado (cProfile, SnakeViz, line_profiler, memory_profiler y Scalene) y
-predicción de tiempos con IA.
+perfilado (cProfile, SnakeViz, line_profiler, memory_profiler y Scalene),
+predicción de tiempos con IA y la evaluación de su costo y utilidad.
 
 Cada medición es costosa, por eso los endpoints son ``def`` normales:
 FastAPI los ejecuta en un pool de hilos y no bloquea el servidor.
@@ -17,6 +17,17 @@ from rutas.benchmark import ejecutar_benchmark
 from rutas.concurrencia import ejecutar_concurrencia
 from rutas.entrada_salida import ejecutar_entrada_salida
 from rutas.escalabilidad import ejecutar_escalabilidad
+from rutas.evaluacion_modelo import (
+    Entrenado,
+    comparar_con_medicion_directa,
+    concluir_comparacion,
+    concluir_entrenamiento,
+    concluir_latencia,
+    concluir_precision,
+    medir_entrenamiento,
+    medir_latencia,
+    medir_precision,
+)
 from rutas.experimento_cache import ejecutar_experimento_cache
 from rutas.perfilado import (
     ejecutar_perfilado,
@@ -80,6 +91,72 @@ def recomendar(
         raise HTTPException(409, "Primero entrená el modelo.")
     return estado.modelo.recomendar(nodos, aristas, ponderado)._asdict() | {
         "advertencias": advertencias(nodos, aristas)
+    }
+
+
+def _entrenado() -> tuple[Entrenado, bool]:
+    """El modelo entrenado y si hubo que entrenarlo ahora.
+
+    Cada medición del modelo se puede pedir sola: si todavía no hay un
+    modelo, se entrena primero (tarda unos segundos) y la respuesta lo avisa.
+    Hay que llamarlo con ``cerrojo_medicion`` tomado.
+    """
+    if estado.entrenado is not None:
+        return estado.entrenado, False
+    estado.entrenado = medir_entrenamiento()
+    estado.modelo = estado.entrenado.modelo
+    return estado.entrenado, True
+
+
+@router.post("/modelo/entrenamiento")
+def modelo_entrenamiento() -> dict:
+    """Cuánto cuesta construir el modelo: datos, ajuste, memoria y tamaño.
+
+    Vuelve a medir y entrenar siempre, y deja el resultado como modelo
+    activo para las demás mediciones y para ``/prediccion/recomendar``.
+    """
+    with estado.cerrojo_medicion:
+        estado.entrenado = medir_entrenamiento()
+        estado.modelo = estado.entrenado.modelo
+    costo = estado.entrenado.costo
+    return costo._asdict() | {"conclusion": concluir_entrenamiento(costo)}
+
+
+@router.post("/modelo/precision")
+def modelo_precision() -> dict:
+    """Error (MAE y porcentual) en grafos no vistos, contra una referencia."""
+    with estado.cerrojo_medicion:
+        entrenado, ahora = _entrenado()
+    filas = medir_precision(entrenado)
+    return {
+        "entrenado_ahora": ahora,
+        "filas": [fila._asdict() for fila in filas],
+        "conclusion": concluir_precision(filas),
+    }
+
+
+@router.post("/modelo/latencia")
+def modelo_latencia() -> dict:
+    """Tiempo y memoria de una predicción."""
+    with estado.cerrojo_medicion:
+        entrenado, ahora = _entrenado()
+        latencia = medir_latencia(entrenado.modelo)
+    return latencia._asdict() | {
+        "entrenado_ahora": ahora,
+        "conclusion": concluir_latencia(latencia),
+    }
+
+
+@router.post("/modelo/comparacion")
+def modelo_comparacion() -> dict:
+    """Predecir contra ejecutar el algoritmo y cuándo se amortiza entrenar."""
+    with estado.cerrojo_medicion:
+        entrenado, ahora = _entrenado()
+        comparacion = comparar_con_medicion_directa(entrenado)
+    return comparacion._asdict() | {
+        "filas": [fila._asdict() for fila in comparacion.filas],
+        "entrenado_ahora": ahora,
+        "conclusion": concluir_comparacion(comparacion),
     }
 
 

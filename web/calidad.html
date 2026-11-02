@@ -84,6 +84,70 @@
           resultados de limpieza de código se ven en la ventana Optimización.
         </p>
       </section>
+      <section>
+        <h2
+          data-api="GET /api/calidad/ci"
+          data-cmd="gh run list --workflow ci.yml --branch main"
+        >
+          Pipeline de integración continua (GitHub Actions)
+        </h2>
+        <p>
+          El pipeline <code>.github/workflows/ci.yml</code> ejecuta los
+          controles (secretos, análisis estático, pruebas y cobertura,
+          seguridad y documentación, rendimiento y memoria) y decide si el
+          código se aprueba. Esta ventana no los vuelve a ejecutar ni los
+          simula: lee de GitHub el resultado real de la última corrida en
+          <code>main</code>.
+        </p>
+        <div class="barra">
+          <button class="principal" id="btn-ci">Actualizar</button>
+          <a id="enlace-ci" href="#" target="_blank" rel="noopener" hidden>
+            Abrir en GitHub Actions
+          </a>
+          <span class="estado" id="estado-ci"></span>
+        </div>
+        <div class="resumen" id="veredicto-ci"></div>
+        <p class="conclusion" id="conclusion-ci"></p>
+
+        <h3 data-api="GET /api/calidad/ci">Etapas de la última corrida</h3>
+        <div class="tabla-scroll">
+          <table id="tabla-etapas">
+            <thead>
+              <tr>
+                <th>Etapa</th>
+                <th>Estado</th>
+                <th>Duración</th>
+                <th>Paso que falló</th>
+                <th>Registro</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <h3 data-api="GET /api/calidad/ci">Historial de corridas</h3>
+        <div class="tabla-scroll">
+          <table id="tabla-historial">
+            <thead>
+              <tr>
+                <th>Corrida</th>
+                <th>Estado</th>
+                <th>Commit</th>
+                <th>Cambio</th>
+                <th>Evento</th>
+                <th>Duración</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="nota">
+          El repositorio sale de la variable <code>GITHUB_REPOSITORY</code> o
+          del remoto <code>origin</code>. Si es privado, el servidor necesita
+          la variable <code>GITHUB_TOKEN</code> con permiso de solo lectura de
+          Actions; el token nunca llega al navegador.
+        </p>
+      </section>
     </main>
     <script src="/estatico/js/comun.js"></script>
     <script src="/estatico/js/calidad.js"></script>

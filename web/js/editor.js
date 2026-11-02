@@ -13,7 +13,6 @@ const COLOR = {
   seleccion: "#ffffff",
 };
 
-const el = (id) => document.getElementById(id);
 const lienzo = el("lienzo");
 let grafo = { nodos: [], aristas: [] };
 let seleccion = null; // {tipo: "nodo", nombre} | {tipo: "arista", a, b}

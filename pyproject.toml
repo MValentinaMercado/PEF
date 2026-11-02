@@ -27,6 +27,10 @@ max-complexity = 10
 # archivos. "include" limita la medición a estas carpetas.
 include = ["api/*", "rutas/*"]
 relative_files = true
+# sys.monitoring no choca con memory_profiler ni line_profiler (que usan
+# sys.settrace): sin esto el doctest de ejecutar_perfilado_memoria falla al
+# medir cobertura. Así local y CI se comportan igual.
+core = "sysmon"
 
 [tool.coverage.report]
 # Umbral mínimo de cobertura definido por el equipo (hoy la cobertura real

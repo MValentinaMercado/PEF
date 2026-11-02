@@ -37,6 +37,9 @@ Lógica (módulos ``rutas``)
 .. automodule:: rutas.prediccion
    :members:
 
+.. automodule:: rutas.evaluacion_modelo
+   :members:
+
 .. automodule:: rutas.perfilado
    :members:
 
@@ -74,6 +77,9 @@ API (módulos ``api``)
    :members:
 
 .. automodule:: api.calidad_router
+   :members:
+
+.. automodule:: api.ci_github
    :members:
 
 .. automodule:: api.documentacion

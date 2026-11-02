@@ -495,6 +495,96 @@ La salida se completa al ejecutar el perfilado.</pre
           grafos chicos no captura del todo.
         </p>
       </section>
+      <section>
+        <h2>Costo y utilidad del modelo de IA</h2>
+        <p>
+          Que el modelo acierte no alcanza: hay que ver cuánto cuesta y
+          cuándo conviene frente a la alternativa de siempre, que es ejecutar
+          el algoritmo y medir. Cada medición se ejecuta por separado y su
+          conclusión la redacta la aplicación con reglas fijas sobre los
+          números obtenidos (no interviene ninguna IA). Los tiempos son la
+          mediana de varias repeticiones y cambian de una corrida a otra.
+          Si el modelo todavía no está entrenado, cada botón lo entrena antes.
+        </p>
+
+        <h3 data-api="POST /api/analisis/modelo/entrenamiento">
+          1 · Costo de entrenar
+        </h3>
+        <div class="barra">
+          <button class="principal" id="btn-modelo-entrenamiento">Medir entrenamiento</button>
+          <span class="estado" id="estado-modelo-entrenamiento"></span>
+        </div>
+        <div class="resumen" id="resumen-modelo-entrenamiento"></div>
+        <p class="conclusion" id="conclusion-modelo-entrenamiento"></p>
+
+        <h3 data-api="POST /api/analisis/modelo/precision">
+          2 · Precisión en grafos nuevos
+        </h3>
+        <div class="barra">
+          <button class="principal" id="btn-modelo-precision">Medir precisión</button>
+          <span class="estado" id="estado-modelo-precision"></span>
+        </div>
+        <div class="tabla-scroll">
+          <table id="tabla-modelo-precision">
+            <thead>
+              <tr>
+                <th>Algoritmo</th>
+                <th>Grafos</th>
+                <th>MAE (ms)</th>
+                <th>Error medio (%)</th>
+                <th>MAE sin IA (ms)</th>
+                <th>Error sin IA (%)</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="nota">
+          «Sin IA» es la referencia más simple posible: predecir siempre el
+          tiempo medio de los grafos de entrenamiento.
+        </p>
+        <p class="conclusion" id="conclusion-modelo-precision"></p>
+
+        <h3 data-api="POST /api/analisis/modelo/latencia">
+          3 · Latencia y memoria de una predicción
+        </h3>
+        <div class="barra">
+          <button class="principal" id="btn-modelo-latencia">Medir latencia</button>
+          <span class="estado" id="estado-modelo-latencia"></span>
+        </div>
+        <div class="resumen" id="resumen-modelo-latencia"></div>
+        <p class="conclusion" id="conclusion-modelo-latencia"></p>
+
+        <h3 data-api="POST /api/analisis/modelo/comparacion">
+          4 · Predecir frente a ejecutar el algoritmo
+        </h3>
+        <p class="nota">
+          Se ejecuta Dijkstra en grafos que el modelo no vio y se compara lo
+          que tarda con lo que tarda predecirlo.
+        </p>
+        <div class="barra">
+          <button class="principal" id="btn-modelo-comparacion">Comparar</button>
+          <span class="estado" id="estado-modelo-comparacion"></span>
+        </div>
+        <div class="tabla-scroll">
+          <table id="tabla-modelo-comparacion">
+            <thead>
+              <tr>
+                <th>Nodos</th>
+                <th>Aristas</th>
+                <th>Ejecutar (ms)</th>
+                <th>Predicho (ms)</th>
+                <th>Error (%)</th>
+                <th>Predecir (µs)</th>
+                <th>Veces más rápido predecir</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="resumen" id="resumen-modelo-comparacion"></div>
+        <p class="conclusion" id="conclusion-modelo-comparacion"></p>
+      </section>
     </main>
     <script src="/estatico/js/comun.js"></script>
     <script src="/estatico/js/analisis.js"></script>

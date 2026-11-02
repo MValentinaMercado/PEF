@@ -21,7 +21,8 @@ nav:
       - Algoritmos y estructuras: algoritmos.md
       - Decisiones de diseño: decisiones.md
       - Optimización y refactorización: optimizacion.md
-      - Componente de IA: ia.md
+      - Componente de IA (costo y utilidad): ia.md
+      - IA aplicada al desarrollo: desarrollo_con_ia.md
   - 5. API y contratos: api_rest.md
   - 6. Pruebas: pruebas.md
   - 7. Rendimiento: rendimiento.md

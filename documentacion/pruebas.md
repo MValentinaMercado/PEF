@@ -12,6 +12,9 @@ La ventana ejecuta `pytest` y muestra el resultado de cada prueba, agrupadas por
 - **E/S de archivos grandes**: `tests/test_entrada_salida.py` comprueba que todos los modos de escritura, lectura y procesamiento paralelo producen el mismo resultado.
 - **timeit**: `tests/test_rendimiento.py` comprueba que la caché y BFS realmente son más rápidos.
 
+- **Costo del modelo de IA**: `tests/test_modelo_costo.py` usa datos sintéticos exactos (el error esperado es cero) y comprueba que cada conclusión sigue sus umbrales y que cada medición se puede pedir sola.
+- **Estado del CI**: `tests/test_ci_github.py` reemplaza la API de GitHub por respuestas fijas (el pipeline no depende de la red) y comprueba el resumen, los errores traducidos, que el token solo se envíe si existe y que solo se entreguen enlaces `https`.
+
 Desde la terminal el comando equivalente es `pytest -q`; el endpoint es `POST /api/pruebas/ejecutar`.
 
 ## Perfilado (ventana Análisis)

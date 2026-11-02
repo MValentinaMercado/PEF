@@ -3,6 +3,7 @@
 import threading
 
 from rutas.ejemplo import crear_grafo_ejemplo
+from rutas.evaluacion_modelo import Entrenado
 from rutas.grafo import Grafo
 from rutas.prediccion import ModeloTiempos
 
@@ -21,6 +22,9 @@ class Estado:
         self.cerrojo_medicion = threading.Lock()
         # Se llena al entrenar la regresión de tiempos (ventana Análisis).
         self.modelo: ModeloTiempos | None = None
+        # Modelo con sus datos y costo, para evaluar su utilidad (ventana
+        # Análisis, "Costo y utilidad del modelo").
+        self.entrenado: Entrenado | None = None
 
 
 estado = Estado()

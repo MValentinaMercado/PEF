@@ -51,6 +51,8 @@ pip install -r requirements.txt
 | Memoria                  | `python -m rutas.memory_gate`                                                                                          | Pico de Dijkstra \> 32 MiB                    |
 | Profiling de CPU         | Ver el comando en [Rendimiento](rendimiento.md) (deja los `.prof` en `perfiles/`)                                                      | No bloquea (informativo)                      |
 
+`pytest --cov` usa el motor `sys.monitoring` de coverage (`core = "sysmon"` en `pyproject.toml`), igual que el CI; así no choca con `memory_profiler` ni `line_profiler`. No hace falta definir `COVERAGE_CORE` a mano.
+
 SonarQube Cloud solo se ejecuta en el pipeline (necesita el secret `SONAR_TOKEN`); en local se ven sus resultados en la ventana Calidad. El tiempo depende de la máquina: si el Performance Gate falla solo en local, repetirlo antes de investigar.
 
 ## Cómo contribuir

@@ -1,5 +1,4 @@
 /* Ventana 3: herramientas que detectan código redundante. */
-const el = (id) => document.getElementById(id);
 const HERRAMIENTAS = ["ruff", "vulture", "pylint", "radon", "cobertura"];
 const ETIQUETA = {
   ruff: "hallazgos",
@@ -8,13 +7,6 @@ const ETIQUETA = {
   radon: "funciones sobre el límite",
   cobertura: "líneas sin ejecutar",
 };
-
-function ficha(titulo, valor, clase = "") {
-  return (
-    `<div class="ficha"><b class="${clase}">${esc(valor)}</b>` +
-    `${esc(titulo)}</div>`
-  );
-}
 
 function mostrar(nombre, datos) {
   const clase = datos.cumple === null ? "" : datos.cumple ? "ok" : "mal";

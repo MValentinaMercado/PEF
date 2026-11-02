@@ -20,10 +20,10 @@ Con eso se levanta todo. Abrir <http://127.0.0.1:8000>.
 | Ventana           | Dirección        | Contenido                                                        |
 | ----------------- | ---------------- | ---------------------------------------------------------------- |
 | 1 · Editor        | `/`              | Editor del grafo, búsqueda de rutas y comparación de algoritmos. |
-| 2 · Análisis      | `/analisis`      | Benchmark y escalabilidad hasta 100.000 nodos, caché, concurrencia, perfilado (cProfile, line_profiler, Scalene), E/S e IA. |
+| 2 · Análisis      | `/analisis`      | Benchmark y escalabilidad hasta 100.000 nodos, caché, concurrencia, perfilado (cProfile, line_profiler, Scalene), E/S e IA con la medición de su costo y utilidad. |
 | 3 · Optimización  | `/optimizacion`  | Código redundante, refactorización y herramientas de limpieza.   |
 | 4 · Pruebas       | `/pruebas`       | Ejecuta y muestra la suite de pruebas.                           |
-| 5 · Calidad       | `/calidad`       | Quality Gate y métricas de SonarQube Cloud.                      |
+| 5 · Calidad       | `/calidad`       | Quality Gate de SonarQube Cloud y estado del pipeline de GitHub Actions. |
 | 6 · Documentación | `/documentacion` | Referencia del código (Sphinx).                                 |
 
 La documentación interactiva de la API está en
@@ -51,7 +51,7 @@ Cobertura de la documentación externa (los 9 puntos del enunciado):
 | Descripción funcional y requisitos | `funcional.md` |
 | Arquitectura y diagrama de componentes | `arquitectura.md` |
 | Instalación y ejecución | `uso.md` |
-| Diseño técnico y decisiones | `algoritmos.md`, `decisiones.md`, `optimizacion.md`, `ia.md` |
+| Diseño técnico y decisiones | `algoritmos.md`, `decisiones.md`, `optimizacion.md`, `ia.md`, `desarrollo_con_ia.md` |
 | API y contratos | `api_rest.md` |
 | Pruebas | `pruebas.md` |
 | Rendimiento | `rendimiento.md` |

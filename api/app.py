@@ -17,6 +17,7 @@ from fastapi.staticfiles import StaticFiles
 from api import (
     analisis_router,
     calidad_router,
+    ci_github,
     documentacion,
     grafo_router,
     optimizacion_router,
@@ -49,6 +50,7 @@ app.include_router(grafo_router.router)
 app.include_router(analisis_router.router)
 app.include_router(pruebas_router.router)
 app.include_router(calidad_router.router)
+app.include_router(ci_github.router)
 app.include_router(optimizacion_router.router)
 app.include_router(documentacion.router)
 app.mount("/estatico", StaticFiles(directory=WEB), name="estatico")
