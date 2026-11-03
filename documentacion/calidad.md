@@ -67,7 +67,6 @@ Las herramientas locales dan respuesta inmediata y bloquean problemas antes del 
 
 - **Gitleaks** busca secretos en todo el historial. Criterio: falla con cualquier hallazgo.
 
-- **Dependabot** propone cada semana actualizaciones de las dependencias de Python y de las acciones del pipeline.
 
 Informes: `bandit.json` y `pip-audit.json` (JSON) y la salida legible de cada paso en el log de la corrida.
 
