@@ -28,7 +28,9 @@
 
         <p>
           Se comparan los algoritmos bajo las mismas condiciones con grafos de
-          100, 1.000 y 5.000 nodos.
+          100, 1.000 y 5.000 nodos. BFS no maneja pesos: sirve para conocer el
+          costo base de recorrer el grafo sin manejar pesos, por eso las
+          conclusiones comparan solo Dijkstra y A*.
         </p>
 
         <div class="barra">
@@ -55,7 +57,8 @@
           100.000 nodos y se compara el tiempo observado con el que predice la
           complejidad: <code>O(V + E)</code> para BFS y
           <code>O((V + E) log V)</code> para Dijkstra y A*. El esperado de cada
-          tamaño se escala desde el más chico.
+          tamaño se escala desde el más chico. BFS sirve para conocer el costo
+          base de recorrer el grafo sin manejar pesos.
         </p>
 
         <div class="barra">
@@ -492,7 +495,8 @@ La salida se completa al ejecutar el perfilado.</pre>
           <code>t ∝ V<sup>b</sup>·E<sup>c</sup></code>. Los exponentes
           <em>b</em> y <em>c</em> se pueden comparar con la complejidad
           teórica. Se evalúa con grafos que no se utilizaron durante el
-          entrenamiento.
+          entrenamiento. Las conclusiones comparan solo Dijkstra y A*: BFS sirve
+          para conocer el costo base de recorrer el grafo sin manejar pesos.
         </p>
 
         <div class="barra">
