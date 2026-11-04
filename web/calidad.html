@@ -34,8 +34,7 @@
           <strong>duplicación</strong>, y mide la cobertura. El
           <strong>Quality Gate</strong> es el conjunto de condiciones que debe
           cumplir el código nuevo; con <code>sonar.qualitygate.wait=true</code>
-          el pipeline espera su resultado. Esta ventana no analiza nada:
-          consulta el último análisis.
+          el pipeline espera su resultado. 
         </p>
         <div class="barra">
           <button class="principal" id="btn-calidad">Actualizar</button>
@@ -68,29 +67,22 @@
         <p class="conclusion" id="analisis-condiciones"></p>
 
         <h3 data-api="GET /api/calidad/sonar">Métricas del proyecto</h3>
-        <p class="nota">
-          Corresponden al último análisis de SonarQube, no a una medición local
-          ni necesariamente a la última corrida de CI.
-        </p>
+        
         <div class="resumen" id="medidas"></div>
 
         <h3>Cómo está configurado</h3>
         <p>
-          El proyecto se identifica en <code>sonar-project.properties</code>
-          (organización y clave, que no son secretas). El pipeline
-          (<code>.github/workflows/ci.yml</code>) genera
+          El proyecto se identifica en <code>sonar-project.properties</code>. 
+          El pipeline(<code>.github/workflows/ci.yml</code>) genera
           <code>coverage.xml</code> con <code>pytest --cov</code> y ejecuta el
-          análisis con la action oficial. El token no está en el repositorio:
-          se guarda como secret <code>SONAR_TOKEN</code> de GitHub.
+          análisis con la action oficial. 
         </p>
         <p class="nota">
           El mismo pipeline ejecuta, en etapas separadas: Gitleaks (secretos);
           Ruff, mypy, Vulture, Pylint, Radon y Bandit; pytest con cobertura
           mínima del 80 % junto con SonarQube; pip-audit, MkDocs, Sphinx y
           Lychee; y, solo si todas aprobaron, los controles de rendimiento y
-          memoria. Sin <code>SONAR_TOKEN</code> (por ejemplo, en Pull Requests
-          desde forks) el análisis de SonarQube se omite. Los resultados de
-          limpieza de código se ven en la ventana Optimización.
+          memoria.
         </p>
       </section>
       <section>
@@ -98,13 +90,11 @@
           data-api="GET /api/calidad/ci"
           data-cmd="gh run list --workflow ci.yml --branch main"
         >
-          Pipeline de integración continua (GitHub Actions)
+          Pipeline de integración continua
         </h2>
         <p>
           El pipeline <code>.github/workflows/ci.yml</code> ejecuta los
-          controles y decide si el código se aprueba. Esta ventana no los
-          ejecuta ni los simula: lee de GitHub el resultado real de la última
-          corrida en <code>main</code>.
+          controles y decide si el código se aprueba.
         </p>
         <div class="barra">
           <button class="principal" id="btn-ci">Actualizar</button>
@@ -164,16 +154,7 @@
           </table>
         </div>
         <p class="conclusion" id="analisis-historial"></p>
-        <p class="nota">
-          Resume las cinco corridas más recientes, no es un registro
-          exhaustivo; no incluye ejecuciones locales.
-        </p>
-        <p class="nota">
-          El repositorio sale de la variable <code>GITHUB_REPOSITORY</code> o
-          del remoto <code>origin</code>. Si es privado, el servidor necesita
-          la variable <code>GITHUB_TOKEN</code> con permiso de solo lectura de
-          Actions; el token nunca llega al navegador.
-        </p>
+    
       </section>
     </main>
     <script src="/estatico/js/comun.js"></script>

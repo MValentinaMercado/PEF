@@ -117,8 +117,7 @@
       <section class="fila-completa">
         <h2>Comparación de algoritmos</h2>
         <p class="nota">
-          Tiempo: promedio de 50 repeticiones. Memoria: pico de una ejecución
-          aparte.
+          Tiempo: promedio de 50 repeticiones. 
         </p>
         <p id="estado-resultados" class="estado" aria-live="polite"></p>
         <div class="tabla-scroll">
@@ -168,7 +167,7 @@
               <tr>
                 <td>BFS</td>
                 <td>
-                  <span class="etiqueta-estructura">dict de adyacencia</span> <span class="etiqueta-estructura">deque</span> <span class="etiqueta-estructura">dict de predecesores</span><br /><small>deque permite extraer el primero en O(1); los diccionarios registran visitados y predecesores.</small>
+                  <span class="etiqueta-estructura">dict de adyacencia</span> <span class="etiqueta-estructura">deque</span> <span class="etiqueta-estructura">dict de predecesores</span><br />
                 </td>
                 <td>Busca la ruta con menos conexiones, sin considerar los pesos.</td>
                 <td>O(V+E)</td>
@@ -177,7 +176,7 @@
               <tr>
                 <td>Dijkstra</td>
                 <td>
-                  <span class="etiqueta-estructura">dict de adyacencia</span> <span class="etiqueta-estructura">heapq</span> <span class="etiqueta-estructura">dict de distancias</span> <span class="etiqueta-estructura">set</span> <span class="etiqueta-estructura">dict de predecesores</span><br /><small>heapq extrae la menor prioridad en O(log V); dict ofrece acceso promedio O(1) y set evita procesar nodos cerrados.</small>
+                  <span class="etiqueta-estructura">dict de adyacencia</span> <span class="etiqueta-estructura">heapq</span> <span class="etiqueta-estructura">dict de distancias</span> <span class="etiqueta-estructura">set</span> <span class="etiqueta-estructura">dict de predecesores</span><br />
                 </td>
                 <td>Encuentra la ruta de menor costo con pesos no negativos.</td>
                 <td>O((V+E) log V), con listas de adyacencia y un heap binario.</td>
@@ -186,7 +185,7 @@
               <tr>
                 <td>A*</td>
                 <td>
-                  <span class="etiqueta-estructura">dict de adyacencia</span> <span class="etiqueta-estructura">heapq</span> <span class="etiqueta-estructura">dict de costos</span> <span class="etiqueta-estructura">set</span> <span class="etiqueta-estructura">dict de predecesores</span><br /><small>heapq prioriza g(n)+h(n); dict conserva el mejor costo y los predecesores, y set registra nodos cerrados.</small>
+                  <span class="etiqueta-estructura">dict de adyacencia</span> <span class="etiqueta-estructura">heapq</span> <span class="etiqueta-estructura">dict de costos</span> <span class="etiqueta-estructura">set</span> <span class="etiqueta-estructura">dict de predecesores</span><br />
                 </td>
                 <td>Como Dijkstra, pero prioriza por g(n)+h(n). La heurística h es la distancia dibujada entre nodos, escalada para que nunca sobreestime el costo real.</td>
                 <td>Depende de la heurística y del grafo.</td>

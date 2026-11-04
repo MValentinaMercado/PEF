@@ -24,11 +24,7 @@
           Diseño actual y simplificaciones
         </h2>
 
-        <p class="nota">
-          Esta tabla describe decisiones que se pueden verificar en el código
-          actual. No compara versiones antiguas ni presenta mediciones de otra
-          ejecución como si fueran resultados recientes.
-        </p>
+        
         <div class="tabla-scroll">
           <table>
             <thead>
@@ -87,7 +83,7 @@
         <h3 data-api="POST /api/optimizacion/vulture" data-cmd="vulture">
           Vulture: código muerto
         </h3>
-        <p class="nota">Busca funciones, clases y variables que nadie usa. Las rutas de FastAPI y los validadores de pydantic se excluyen por decorador, y los campos de las filas de resultados están en <code>vulture_lista_blanca.py</code> (configuración en <code>pyproject.toml</code>).</p>
+        <p class="nota">Busca funciones, clases y variables que nadie usa. Las rutas de FastAPI y los validadores de pydantic se excluyen por decorador, y los campos de las filas de resultados están en <code>vulture_lista_blanca.py</code>.</p>
         <div class="resumen" id="res-vulture"></div>
         <p id="criterio-vulture"></p>
         <div class="tabla-scroll">
@@ -108,7 +104,7 @@
         <h3 data-api="POST /api/optimizacion/pylint" data-cmd="pylint rutas api main.py --disable=all --enable=duplicate-code">
           Pylint: bloques de código repetidos
         </h3>
-        <p class="nota">Solo se activa la regla <code>duplicate-code</code> (R0801): señala el mismo bloque en dos archivos, candidato a unificarse en una función.</p>
+        <p class="nota">Solo se activa la regla <code>duplicate-code</code>.</p>
         <div class="resumen" id="res-pylint"></div>
         <p id="criterio-pylint"></p>
         <div class="tabla-scroll">
@@ -150,7 +146,7 @@
         <h3 data-api="POST /api/optimizacion/cobertura" data-cmd="pytest --cov --cov-report=term-missing">
           coverage: líneas que ninguna prueba ejecuta
         </h3>
-        <p class="nota">Una línea que ninguna prueba ejecuta puede ser código muerto o estar sin probar. Es informativo: hay que revisar cada tramo. La medición excluye la prueba lenta de Scalene real.</p>
+        <p class="nota">Una línea que ninguna prueba ejecuta puede ser código muerto o estar sin probar. La medición excluye la prueba lenta de Scalene real.</p>
         <div class="resumen" id="res-cobertura"></div>
         <p id="criterio-cobertura"></p>
         <div class="tabla-scroll">
@@ -191,28 +187,7 @@
         </div>
       </section>
 
-      <section>
-        <h2>Criterio para optimizar</h2>
-        <p>
-          Una optimización solo vale la pena cuando una medición muestra un
-          problema real. Se mide dónde está el costo (<code>cProfile</code> por
-          función, <code>line_profiler</code> por línea, <code>memory_profiler</code>
-          y Scalene para memoria), se modifica esa parte y se vuelve a medir en
-          condiciones comparables. El pipeline bloquea regresiones con el
-          Performance Gate y el Memory Gate (<code>rutas/performance_gate.py</code>
-          y <code>rutas/memory_gate.py</code>). Los valores concretos pertenecen
-          a cada ejecución: están en la ventana Análisis y en los registros de
-          GitHub Actions.
-        </p>
-        <h3>Decisiones de no optimizar</h3>
-        <p class="nota">
-          La búsqueda de una sola ruta no se paraleliza. Los hilos no aceleran
-          trabajo de CPU en Python por el GIL, y los procesos pagan el arranque
-          del pool y la copia del grafo, por lo que solo pueden ganar con varios
-          núcleos libres y muchas consultas. La ventana Análisis mide las tres
-          estrategias con las mismas consultas para decidir con datos.
-        </p>
-      </section>
+      
     </main>
     <script src="/estatico/js/comun.js"></script>
     <script src="/estatico/js/optimizacion.js"></script>
