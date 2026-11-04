@@ -9,16 +9,24 @@ python main.py
 
 Con ese único comando se levanta todo. Abrir <http://127.0.0.1:8000>:
 
-| Ventana           | Dirección        | Contenido                                                                                                                                                                   |
-|-------------------|------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 1 · Editor        | `/`              | Editor del grafo, búsqueda de rutas, tabla de resultados y tabla de referencia de los algoritmos.                                                                           |
-| 2 · Análisis      | `/analisis`      | Benchmark, caché, concurrencia, perfilado (`cProfile`, `SnakeViz`, `line_profiler`, `memory_profiler` y `Scalene`), E/S de archivos grandes y predicción de tiempos con IA. |
-| 3 · Optimización  | `/optimizacion`  | Código redundante eliminado y refactorización, comparando la versión inicial con la final.                                                                                  |
-| 4 · Pruebas       | `/pruebas`       | Ejecuta y muestra la suite de pruebas.                                                                                                                                      |
-| 5 · Calidad       | `/calidad`       | Quality Gate y métricas de SonarQube Cloud.                                                                                                                                 |
-| 6 · Documentación | `/documentacion` | Referencia interna del código, generada con Sphinx (ver [Mantenimiento](mantenimiento.md)).                                                                                                                                    |
+| Ventana | Dirección | Contenido |
+|---|---|---|
+| Editor | `/` | Edición del grafo, búsqueda de rutas y comparación de algoritmos. |
+| Análisis | `/analisis` | Experimentos de rendimiento, concurrencia, perfilado, E/S y predicción. |
+| Optimización | `/optimizacion` | Decisiones de diseño y controles de limpieza ejecutados bajo demanda. |
+| Pruebas | `/pruebas` | Suite de pytest ejecutada bajo demanda y detalle de casos. |
+| Calidad | `/calidad` | Quality Gate de SonarQube y última corrida real de GitHub Actions. |
+| Documentación | `/documentacion` | Guías externas con MkDocs y referencia de código con Sphinx. |
 
 La documentación interactiva de la API que genera FastAPI está en <http://127.0.0.1:8000/docs>.
+
+## Resultados guardados en la pestaña
+
+Abrir una ventana no ejecuta experimentos. Los resultados de Análisis, Optimización, Pruebas y Calidad, la consulta del modelo de predicción y la última comparación del Editor se guardan en el `sessionStorage` de la pestaña y se muestran al volver, con la fecha de la ejecución y sin presentarlos como nuevos. Al cerrar la pestaña se pierden.
+
+- El Editor restaura su última comparación solo si el grafo y los nodos de origen y destino siguen siendo los mismos; si no, la descarta.
+- Restaurar el perfilado en Análisis no vuelve a iniciar SnakeViz: el servidor se inicia únicamente al pedir un perfil.
+- Los textos de conclusión de las tablas de Análisis se generan en el navegador a partir de los resultados mostrados, también al restaurarlos. Dos valores que difieren menos del 5 % se describen como prácticamente iguales (`TOLERANCIA_IGUALES` en `web/js/comun.js`).
 
 ## Puertos utilizados
 
@@ -39,7 +47,7 @@ mkdocs serve -a 127.0.0.1:8001                # este sitio en http://127.0.0.1:8
 python -m sphinx -b html docs docs/_build/html # referencia interna
 ```
 
-Al arrancar, la aplicación genera la referencia interna si todavía no existe (ventana 6). El botón de esa ventana la regenera.
+Al arrancar, la aplicación genera ambas documentaciones solo si todavía no existen. Los botones de la ventana Documentación permiten regenerarlas manualmente.
 
 ## Estructura del proyecto
 
@@ -51,7 +59,7 @@ rutas/             lógica pura (sin web): grafo, algoritmos, caché,
                    mediciones, perfilado, concurrencia y E/S
 rutas/algoritmos/  BFS, Dijkstra, A* y utilidades comunes
 perfiles/          archivos .prof generados por cProfile (SnakeViz)
-tests/             pruebas unittest / pytest / timeit
+tests/             suite pytest (incluye unittest, doctest y mediciones con timeit)
 documentacion/     documentación externa (MkDocs)
 docs/              referencia interna del código (Sphinx)
 mkdocs.yml         configuración de MkDocs

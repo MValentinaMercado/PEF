@@ -8,7 +8,9 @@ from .comunes import ResultadoBusqueda, buscar_con_heap
 def dijkstra(grafo: Grafo, origen: str, destino: str) -> ResultadoBusqueda:
     """Ruta de menor costo con pesos no negativos.
 
-    Tiempo O((V+E) log V), espacio O(V). El bucle está en
+    Tiempo O((V+E) log V), espacio O(V+E): el heap conserva una entrada
+    por cada mejora de costo y descarta las obsoletas solo al extraerlas, por
+    lo que puede llegar a O(E) entradas. El bucle está en
     :func:`~rutas.algoritmos.comunes.buscar_con_heap`, compartido con A*:
     aquí la prioridad es solo el costo acumulado.
     """

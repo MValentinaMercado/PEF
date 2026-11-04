@@ -17,7 +17,6 @@ from api.estado import estado
 from rutas.algoritmos import ALGORITMOS
 from rutas.ejemplo import crear_grafo_ejemplo
 from rutas.grafo import Grafo
-from rutas.informacion import INFORMACION_ALGORITMOS
 from rutas.mediciones import medir_consulta
 
 router = APIRouter(prefix="/api")
@@ -184,9 +183,3 @@ def buscar_rutas(consulta: ConsultaEntrada) -> list[FilaResultado]:
                     )
                 )
         return filas
-
-
-@router.get("/informacion")
-def informacion_algoritmos() -> list:
-    """Tabla informativa de funcionamiento y complejidades."""
-    return [fila._asdict() for fila in INFORMACION_ALGORITMOS]

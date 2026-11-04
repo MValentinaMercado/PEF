@@ -27,15 +27,15 @@
           Análisis de calidad con SonarQube
         </h2>
         <p>
-          <code>SonarQube Cloud</code> analiza el código en cada push y en cada
-          Pull Request del pipeline de integración continua. Detecta
-          <strong>bugs</strong>, <strong>vulnerabilidades</strong>,
-          <strong>puntos críticos de seguridad</strong>, <em>code smells</em>
-          (código difícil de mantener) y <strong>duplicación</strong>, y mide
-          la cobertura de las pruebas. El <strong>Quality Gate</strong> es el
-          conjunto de condiciones que el código nuevo debe cumplir: si alguna
-          falla, el pipeline falla. Esta ventana no analiza nada: muestra el
-          resultado del último análisis.
+          <code>SonarQube Cloud</code> analiza el código desde el pipeline de
+          integración continua: detecta <strong>bugs</strong>,
+          <strong>vulnerabilidades</strong>, <strong>puntos críticos de
+          seguridad</strong>, <em>code smells</em> y
+          <strong>duplicación</strong>, y mide la cobertura. El
+          <strong>Quality Gate</strong> es el conjunto de condiciones que debe
+          cumplir el código nuevo; con <code>sonar.qualitygate.wait=true</code>
+          el pipeline espera su resultado. Esta ventana no analiza nada:
+          consulta el último análisis.
         </p>
         <div class="barra">
           <button class="principal" id="btn-calidad">Actualizar</button>
@@ -48,6 +48,10 @@
         <div class="resumen" id="veredicto"></div>
 
         <h3 data-api="GET /api/calidad/sonar">Condiciones del Quality Gate</h3>
+        <p class="nota">
+          Cada fila compara el valor medido con el umbral exigido; el veredicto
+          general lo informa SonarQube.
+        </p>
         <div class="tabla-scroll">
           <table id="tabla-condiciones">
             <thead>
@@ -61,27 +65,32 @@
             <tbody></tbody>
           </table>
         </div>
+        <p class="conclusion" id="analisis-condiciones"></p>
 
         <h3 data-api="GET /api/calidad/sonar">Métricas del proyecto</h3>
+        <p class="nota">
+          Corresponden al último análisis de SonarQube, no a una medición local
+          ni necesariamente a la última corrida de CI.
+        </p>
         <div class="resumen" id="medidas"></div>
 
         <h3>Cómo está configurado</h3>
         <p>
           El proyecto se identifica en <code>sonar-project.properties</code>
-          (organización y clave del proyecto, que no son secretas). El pipeline
+          (organización y clave, que no son secretas). El pipeline
           (<code>.github/workflows/ci.yml</code>) genera
-          <code>coverage.xml</code> con <code>pytest --cov</code>, ejecuta el
-          análisis con la action oficial de SonarQube y, con
-          <code>sonar.qualitygate.wait=true</code>, espera el resultado del
-          Quality Gate. El token de acceso no está en el repositorio: se guarda
-          como secret <code>SONAR_TOKEN</code> de GitHub.
+          <code>coverage.xml</code> con <code>pytest --cov</code> y ejecuta el
+          análisis con la action oficial. El token no está en el repositorio:
+          se guarda como secret <code>SONAR_TOKEN</code> de GitHub.
         </p>
         <p class="nota">
-          Antes de SonarQube, el mismo pipeline ya exige Ruff (calidad y
-          formato), mypy, Vulture, Pylint (código repetido), Radon (complejidad),
-          Bandit, Gitleaks y pip-audit (seguridad), una cobertura mínima del
-          80 % y los controles de rendimiento y memoria. Los
-          resultados de limpieza de código se ven en la ventana Optimización.
+          El mismo pipeline ejecuta, en etapas separadas: Gitleaks (secretos);
+          Ruff, mypy, Vulture, Pylint, Radon y Bandit; pytest con cobertura
+          mínima del 80 % junto con SonarQube; pip-audit, MkDocs, Sphinx y
+          Lychee; y, solo si todas aprobaron, los controles de rendimiento y
+          memoria. Sin <code>SONAR_TOKEN</code> (por ejemplo, en Pull Requests
+          desde forks) el análisis de SonarQube se omite. Los resultados de
+          limpieza de código se ven en la ventana Optimización.
         </p>
       </section>
       <section>
@@ -93,11 +102,9 @@
         </h2>
         <p>
           El pipeline <code>.github/workflows/ci.yml</code> ejecuta los
-          controles (secretos, análisis estático, pruebas y cobertura,
-          seguridad y documentación, rendimiento y memoria) y decide si el
-          código se aprueba. Esta ventana no los vuelve a ejecutar ni los
-          simula: lee de GitHub el resultado real de la última corrida en
-          <code>main</code>.
+          controles y decide si el código se aprueba. Esta ventana no los
+          ejecuta ni los simula: lee de GitHub el resultado real de la última
+          corrida en <code>main</code>.
         </p>
         <div class="barra">
           <button class="principal" id="btn-ci">Actualizar</button>
@@ -107,9 +114,21 @@
           <span class="estado" id="estado-ci"></span>
         </div>
         <div class="resumen" id="veredicto-ci"></div>
+        <p class="nota" id="fecha-ci"></p>
         <p class="conclusion" id="conclusion-ci"></p>
+        <p class="nota">
+          Una corrida se rechaza cuando un control obligatorio falla, vence o
+          queda cancelado. Las etapas dependientes pueden quedar omitidas si
+          falla una previa; “omitida” no equivale a “aprobada”.
+        </p>
 
-        <h3 data-api="GET /api/calidad/ci">Etapas de la última corrida</h3>
+        <h3 data-api="GET /api/calidad/ci">Etapas y controles de la última corrida</h3>
+        <p class="nota">
+          Cada fila es un job real de GitHub Actions. La lista desplegable
+          muestra los pasos que GitHub informa para esta corrida (preparación,
+          controles y guardado de evidencias); el registro tiene la salida
+          completa.
+        </p>
         <div class="tabla-scroll">
           <table id="tabla-etapas">
             <thead>
@@ -118,29 +137,37 @@
                 <th>Estado</th>
                 <th>Duración</th>
                 <th>Paso que falló</th>
-                <th>Registro</th>
+                <th>Controles y registro</th>
               </tr>
             </thead>
             <tbody></tbody>
           </table>
         </div>
+        <p class="conclusion" id="analisis-etapas"></p>
 
-        <h3 data-api="GET /api/calidad/ci">Historial de corridas</h3>
+        <h3 data-api="GET /api/calidad/ci">Últimas corridas</h3>
+        <p class="nota" id="contexto-historial">
+          El historial se completa con la consulta más reciente a GitHub Actions.
+        </p>
         <div class="tabla-scroll">
           <table id="tabla-historial">
             <thead>
               <tr>
                 <th>Corrida</th>
+                <th>Inicio</th>
                 <th>Estado</th>
-                <th>Commit</th>
-                <th>Cambio</th>
-                <th>Evento</th>
+                <th>Cambio y commit</th>
                 <th>Duración</th>
               </tr>
             </thead>
             <tbody></tbody>
           </table>
         </div>
+        <p class="conclusion" id="analisis-historial"></p>
+        <p class="nota">
+          Resume las cinco corridas más recientes, no es un registro
+          exhaustivo; no incluye ejecuciones locales.
+        </p>
         <p class="nota">
           El repositorio sale de la variable <code>GITHUB_REPOSITORY</code> o
           del remoto <code>origin</code>. Si es privado, el servidor necesita

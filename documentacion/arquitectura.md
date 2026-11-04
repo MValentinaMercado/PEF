@@ -39,12 +39,14 @@ flowchart TD
 | Módulo                                               | Responsabilidad                                                                                                        |
 |------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
 | `main.py`                                            | Punto de entrada: levanta uvicorn en `127.0.0.1:8000`.                                                                 |
+| `web/js/comun.js`                                    | Utilidades compartidas de las ventanas: llamadas a la API, guardado y restauración de resultados en `sessionStorage`, tolerancia para «casi iguales» y funciones para redactar conclusiones. Se carga antes que el script de cada ventana. |
 | `api/app.py`                                         | Crea la aplicación, registra los routers, sirve `web/` en `/estatico` y genera la documentación si falta.              |
 | `api/grafo_router.py`                                | Editor: nodos, conexiones y búsqueda de rutas.                                                                         |
 | `api/analisis_router.py`                             | Benchmark, escalabilidad, caché, concurrencia, perfilado, entrada/salida y predicción.                                 |
-| `api/pruebas_router.py`, `api/calidad_router.py`     | Ejecutan la suite y consultan SonarQube Cloud.                                                                         |
+| `api/pruebas_router.py`                             | Ejecuta pytest bajo demanda y resume el informe JUnit.                                                                  |
+| `api/calidad_router.py`, `api/ci_github.py`          | Consultan SonarQube Cloud y la última corrida real de GitHub Actions.                                                  |
 | `api/optimizacion_router.py`, `api/documentacion.py` | Herramientas de limpieza de código y generación de esta documentación.                                                 |
-| `api/estado.py`                                      | Guarda el grafo en memoria y los cerrojos que evitan que dos peticiones lo modifiquen a la vez o falseen una medición. |
+| `api/estado.py`                                      | Guarda el grafo y los modelos de análisis en memoria; coordina las operaciones compartidas con cerrojos.              |
 | `api/esquemas.py`                                    | Modelos pydantic: validan cada entrada antes de llegar a la lógica.                                                    |
 | `rutas/grafo.py`                                     | Estructura de datos del grafo (listas de adyacencia en un `dict`).                                                     |
 | `rutas/algoritmos/`                                  | BFS, Dijkstra y A\*, con una firma común y un registro `ALGORITMOS`.                                                   |
@@ -80,4 +82,4 @@ flowchart TD
 
 ## Estado y concurrencia
 
-Hay **un solo grafo por servidor**, guardado en memoria en `api/estado.py`. `cerrojo_grafo` impide que dos peticiones lo modifiquen a la vez. `cerrojo_medicion` serializa las mediciones porque `tracemalloc` es global al proceso y dos mediciones simultáneas se falsearían. Al arrancar, la documentación se genera en un hilo aparte para no bloquear el inicio del servidor.
+Hay **un solo grafo por servidor**, guardado en memoria en `api/estado.py`. `cerrojo_grafo` impide que dos peticiones lo modifiquen a la vez. `cerrojo_medicion` serializa las mediciones porque `tracemalloc` es global al proceso y dos mediciones simultáneas se falsearían. Al arrancar, Sphinx y MkDocs se construyen en un hilo aparte únicamente si sus archivos de salida no existen; la navegación entre ventanas no vuelve a construirlas.

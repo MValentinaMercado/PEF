@@ -2,15 +2,8 @@
 const NS = "http://www.w3.org/2000/svg";
 const RADIO = 16;
 const COLOR = {
-  nodo: "#22364d",
-  anillo: "#7fb2e5",
-  texto: "#e8eef5",
-  origen: "#4cc38a",
-  destino: "#e8b04a",
-  bloqueo: "#ef6f6c",
-  arista: "#5d6b7c",
-  etiqueta: "#161d26",
-  seleccion: "#ffffff",
+  anillo: "#d6d3ce",
+  ruta: "#f28c28",
 };
 
 const lienzo = el("lienzo");
@@ -19,8 +12,10 @@ let seleccion = null; // {tipo: "nodo", nombre} | {tipo: "arista", a, b}
 let pendiente = null; // primer nodo de una conexión a medio crear
 let resultados = []; // filas devueltas por /api/rutas
 let rutaVisible = [];
-let colorRuta = COLOR.origen;
+let algoritmoElegido = null; // algoritmo cuya ruta se muestra
+let animarRuta = false; // dibuja la ruta con animación solo al elegirla
 let arrastre = null; // {nombre} mientras se mueve un nodo
+const CLAVE_GUARDADO = "editor";
 
 const modo = () => document.querySelector("input[name=modo]:checked").value;
 const posicion = (n) => grafo.nodos.find((x) => x.nombre === n);
@@ -61,6 +56,9 @@ function aplicar(nuevo, limpiarResultados = true) {
   if (limpiarResultados) {
     resultados = [];
     rutaVisible = [];
+    algoritmoElegido = null;
+    guardarResultado(CLAVE_GUARDADO, null);
+    el("estado-resultados").textContent = "";
     mostrarResultados();
   }
   const nombres = grafo.nodos.map((n) => n.nombre);
@@ -103,107 +101,152 @@ function crear(nombre, atributos, texto) {
   return nodo;
 }
 
+/** Dibuja una conexión: línea, etiqueta de peso y zona de clic. */
+function dibujarArista(e, resaltada, nueva) {
+  const p1 = posicion(e.a),
+    p2 = posicion(e.b);
+  const marcada =
+    seleccion &&
+    seleccion.tipo === "arista" &&
+    mismaArista(e, seleccion.a, seleccion.b);
+  const estado = resaltada ? "ruta" : e.bloqueada ? "bloqueada" : "";
+  const clases = [
+    "arista",
+    estado,
+    marcada ? "marcada" : "",
+    nueva ? "nueva" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  crear("line", {
+    class: clases,
+    x1: p1.x,
+    y1: p1.y,
+    x2: p2.x,
+    y2: p2.y,
+    pathLength: 1,
+  });
+  const mx = (p1.x + p2.x) / 2,
+    my = (p1.y + p2.y) / 2;
+  crear("rect", {
+    class: "peso-caja " + estado,
+    x: mx - 16,
+    y: my - 9,
+    width: 32,
+    height: 18,
+    rx: 9,
+  });
+  crear(
+    "text",
+    {
+      class: "peso-texto " + estado,
+      x: mx,
+      y: my + 3.5,
+      "text-anchor": "middle",
+    },
+    Number(e.peso),
+  );
+  // zona ancha e invisible para poder seleccionar la línea con el clic
+  const zona = crear("line", {
+    x1: p1.x,
+    y1: p1.y,
+    x2: p2.x,
+    y2: p2.y,
+    stroke: "transparent",
+    "stroke-width": 14,
+    "data-a": e.a,
+    "data-b": e.b,
+  });
+  zona.style.cursor = "pointer";
+}
+
 function dibujar() {
   lienzo.innerHTML = "";
+  const nuevaRuta = animarRuta;
+  animarRuta = false;
   const enRuta = new Set();
   rutaVisible.forEach((n, i) => {
     if (i) enRuta.add(rutaVisible[i - 1] + "|" + n);
   });
-  for (const e of grafo.aristas) {
-    const p1 = posicion(e.a),
-      p2 = posicion(e.b);
-    const resaltada =
-      enRuta.has(e.a + "|" + e.b) || enRuta.has(e.b + "|" + e.a);
-    const marcada =
-      seleccion &&
-      seleccion.tipo === "arista" &&
-      mismaArista(e, seleccion.a, seleccion.b);
-    const color = resaltada
-      ? colorRuta
-      : e.bloqueada
-        ? COLOR.bloqueo
-        : COLOR.arista;
-    const atributos = {
-      x1: p1.x,
-      y1: p1.y,
-      x2: p2.x,
-      y2: p2.y,
-      stroke: color,
-      "stroke-width": resaltada ? 6 : marcada ? 4 : 2,
-    };
-    if (e.bloqueada) atributos["stroke-dasharray"] = "6 4";
-    crear("line", atributos);
-    const mx = (p1.x + p2.x) / 2,
-      my = (p1.y + p2.y) / 2;
-    crear("ellipse", {
-      cx: mx,
-      cy: my,
-      rx: 16,
-      ry: 9,
-      fill: COLOR.etiqueta,
-      stroke: color,
-    });
-    crear(
-      "text",
-      {
-        x: mx,
-        y: my + 3.5,
-        "text-anchor": "middle",
-        "font-size": 10,
-        fill: COLOR.texto,
-      },
-      Number(e.peso),
-    );
-    // zona ancha e invisible para poder seleccionar la línea con el clic
-    const zona = crear("line", {
-      x1: p1.x,
-      y1: p1.y,
-      x2: p2.x,
-      y2: p2.y,
-      stroke: "transparent",
-      "stroke-width": 14,
-      "data-a": e.a,
-      "data-b": e.b,
-    });
-    zona.style.cursor = "pointer";
-  }
+  const nodosRuta = new Set(rutaVisible);
+  const esDeRuta = (e) =>
+    enRuta.has(e.a + "|" + e.b) || enRuta.has(e.b + "|" + e.a);
+
+  // Capas: primero todo el contexto en gris, la ruta por encima y los nodos arriba.
+  for (const e of grafo.aristas)
+    if (!esDeRuta(e)) dibujarArista(e, false, false);
+  for (const e of grafo.aristas)
+    if (esDeRuta(e)) dibujarArista(e, true, nuevaRuta);
+
+  const origen = el("origen").value,
+    destino = el("destino").value;
   for (const n of grafo.nodos) {
     const marcado =
       (seleccion &&
         seleccion.tipo === "nodo" &&
         seleccion.nombre === n.nombre) ||
       pendiente === n.nombre;
-    const esOrigen = n.nombre === el("origen").value;
-    const esDestino = n.nombre === el("destino").value;
-    const relleno = esOrigen
-      ? COLOR.origen
+    const esOrigen = n.nombre === origen;
+    const esDestino = n.nombre === destino;
+    const estado = esOrigen
+      ? "origen"
       : esDestino
-        ? COLOR.destino
-        : COLOR.nodo;
-    const contorno = esOrigen || esDestino ? relleno : COLOR.anillo;
+        ? "destino"
+        : nodosRuta.has(n.nombre)
+          ? "en-ruta"
+          : "";
+    if (esOrigen || esDestino) {
+      crear("circle", {
+        class: "halo " + (esOrigen ? "origen" : "destino"),
+        cx: n.x,
+        cy: n.y,
+        r: RADIO + 7,
+      });
+    }
     const c = crear("circle", {
+      class: ["nodo", estado, marcado ? "seleccionado" : ""]
+        .filter(Boolean)
+        .join(" "),
       cx: n.x,
       cy: n.y,
       r: RADIO,
-      fill: relleno,
-      stroke: marcado ? COLOR.seleccion : contorno,
-      "stroke-width": 3,
       "data-nodo": n.nombre,
     });
     c.style.cursor = "pointer";
     crear(
       "text",
       {
+        class:
+          "nombre-nodo" +
+          (esOrigen || esDestino
+            ? " claro"
+            : estado === "en-ruta"
+              ? " ruta"
+              : ""),
         x: n.x,
         y: n.y + 4,
         "text-anchor": "middle",
-        "font-size": 12,
-        "font-weight": "bold",
-        fill: esOrigen || esDestino ? "#10161d" : COLOR.texto,
-        "pointer-events": "none",
       },
       n.nombre,
     );
+    if (esOrigen || esDestino) {
+      // rótulo sobre el nodo; si no cabe arriba, debajo
+      const arriba = n.y > 46;
+      crear(
+        "text",
+        {
+          class: "rotulo",
+          x: n.x,
+          y: arriba ? n.y - RADIO - 12 : n.y + RADIO + 20,
+          "text-anchor": "middle",
+        },
+        esOrigen && esDestino
+          ? "Origen y destino"
+          : esOrigen
+            ? "Origen"
+            : "Destino",
+      );
+    }
   }
 }
 
@@ -302,7 +345,7 @@ for (const radio of document.querySelectorAll("input[name=modo]")) {
 }
 
 el("btn-editar").addEventListener("click", async () => {
-  if (!seleccion) return mensaje("Seleccione un nodo o una conexión.", true);
+  if (!seleccion) return mensaje("Seleccioná un nodo o una conexión.", true);
   if (seleccion.tipo === "nodo") {
     const nuevo = await pedir("Nuevo nombre:", seleccion.nombre);
     if (nuevo === null) return;
@@ -339,7 +382,7 @@ el("btn-editar").addEventListener("click", async () => {
 });
 
 el("btn-eliminar").addEventListener("click", async () => {
-  if (!seleccion) return mensaje("Seleccione un nodo o una conexión.", true);
+  if (!seleccion) return mensaje("Seleccioná un nodo o una conexión.", true);
   const url =
     seleccion.tipo === "nodo"
       ? `/api/nodos/${encodeURIComponent(seleccion.nombre)}`
@@ -353,7 +396,7 @@ el("btn-eliminar").addEventListener("click", async () => {
 
 el("btn-bloquear").addEventListener("click", async () => {
   if (!seleccion || seleccion.tipo !== "arista") {
-    return mensaje("Seleccione una conexión (clic sobre la línea).", true);
+    return mensaje("Seleccioná una conexión (clic sobre la línea).", true);
   }
   const actual = grafo.aristas.find((e) =>
     mismaArista(e, seleccion.a, seleccion.b),
@@ -384,7 +427,7 @@ el("btn-ejecutar").addEventListener("click", async (evento) => {
   const algoritmos = [...document.querySelectorAll(".alg:checked")].map(
     (c) => c.value,
   );
-  if (!algoritmos.length) return mensaje("Marque al menos un algoritmo.", true);
+  if (!algoritmos.length) return mensaje("Marcá al menos un algoritmo.", true);
   boton.disabled = true;
   mensaje("Midiendo…");
   try {
@@ -396,6 +439,13 @@ el("btn-ejecutar").addEventListener("click", async (evento) => {
     mensaje("");
     mostrarResultados();
     elegirResultado(resultados[resultados.length - 1].algoritmo);
+    guardarResultado(CLAVE_GUARDADO, {
+      origen: el("origen").value,
+      destino: el("destino").value,
+      grafo,
+      resultados,
+    });
+    el("estado-resultados").textContent = "Ejecución completada ahora.";
   } catch (error) {
     mensaje(error.message, true);
   }
@@ -427,7 +477,58 @@ function mostrarResultados() {
       elegirResultado(resultados[i].algoritmo),
     );
   });
+  el("analisis-rutas").textContent = analizarRutas(resultados, grafo);
   dibujarGraficoRutas();
+  pintarTarjetaRuta();
+}
+
+const formatoDistancia = (d) => Number(d.toFixed(2)).toLocaleString("es-AR");
+/** Distancia y cantidad de conexiones de las rutas encontradas. */
+function compararRutas(conRuta) {
+  const distancias = conMenor(conRuta, (r) => r.distancia, false);
+  const saltos = conMenor(conRuta, (r) => r.ruta.length - 1, false);
+  const nombresDe = (grupo) => grupo.filas.map((r) => r.algoritmo);
+  const iguales = distancias.filas.length === conRuta.length;
+  const mismoCamino = new Set(conRuta.map((r) => r.ruta.join(">"))).size === 1;
+  if (iguales && mismoCamino) {
+    return `Todos encontraron el mismo camino, de distancia ${formatoDistancia(distancias.minimo)}.`;
+  }
+  if (iguales) {
+    return `Todos llegaron a la misma distancia (${formatoDistancia(distancias.minimo)}) por caminos distintos.`;
+  }
+  const frases = [
+    `La menor distancia (${formatoDistancia(distancias.minimo)}) la logran ${listar(nombresDe(distancias))}; ${listar(conRuta.filter((r) => !distancias.filas.includes(r)).map((r) => `${r.algoritmo} recorre ${formatoDistancia(r.distancia)}`))}.`,
+  ];
+  if (saltos.filas.some((r) => !distancias.filas.includes(r))) {
+    frases.push(`${listar(nombresDe(saltos))} usa${saltos.filas.length > 1 ? "n" : ""} menos conexiones (${saltos.minimo}), pero eso no implica menor distancia.`);
+  }
+  return frases.join(" ");
+}
+
+/** Interpreta la tabla de comparación a partir de las filas recibidas o restauradas. */
+function analizarRutas(filas, grafoActual) {
+  if (!filas.length) return "";
+  const conRuta = filas.filter((r) => r.ruta);
+  if (!conRuta.length) {
+    return "Ningún algoritmo encontró ruta: con las conexiones habilitadas, origen y destino no están conectados (las bloqueadas no cuentan).";
+  }
+  const frases = [];
+  if (conRuta.length < filas.length) {
+    const sin = filas.filter((r) => !r.ruta).map((r) => r.algoritmo);
+    frases.push(`${listar(sin)} no encontró${sin.length > 1 ? "n" : ""} ruta, a diferencia del resto.`);
+  }
+  if (filas.length === 1) {
+    frases.push(`Con un solo algoritmo no hay comparación posible: marcá más para contrastar ${filas[0].algoritmo}.`);
+    return frases.join(" ");
+  }
+  if (conRuta.length > 1) frases.push(compararRutas(conRuta));
+  frases.push(compararMagnitud(filas, (r) => r.nodos_explorados, "Nodos explorados", (n) => String(n)));
+  frases.push(compararMagnitud(filas, (r) => r.tiempo_ms, "Tiempo", (n) => `${fmt(n, 4)} ms`));
+  frases.push(compararMagnitud(filas, (r) => r.memoria_kb, "Memoria", (n) => `${fmt(n, 1)} KB`));
+  frases.push(
+    `Con ${pluralizar(grafoActual.nodos.length, "nodo", "nodos")} las diferencias son pequeñas y pueden variar entre ejecuciones; los grafos grandes se comparan en Análisis.`,
+  );
+  return frases.join(" ");
 }
 
 /** Gráfico SVG de barras horizontales alimentado por las mediciones reales. */
@@ -435,7 +536,7 @@ function dibujarGraficoRutas() {
   const contenedor = el("grafico-rutas");
   if (!resultados.length) {
     contenedor.innerHTML =
-      '<p class="nota">Ejecute una búsqueda para generar el gráfico.</p>';
+      '<p class="nota">Ejecutá una búsqueda para generar el gráfico.</p>';
     return;
   }
   const filas = resultados.filter((r) => Number.isFinite(r.tiempo_ms));
@@ -456,41 +557,105 @@ function dibujarGraficoRutas() {
   contenedor.innerHTML = svg + "</svg>";
 }
 
-function elegirResultado(algoritmo) {
+function elegirResultado(algoritmo, animar = true) {
   const indice = resultados.findIndex((r) => r.algoritmo === algoritmo);
   rutaVisible = resultados[indice].ruta || [];
-  colorRuta = COLORES[algoritmo];
+  algoritmoElegido = algoritmo;
+  animarRuta = animar;
   [...el("tabla-resultados").querySelector("tbody").rows].forEach((fila, i) =>
     fila.classList.toggle("elegida", i === indice),
   );
+  pintarTarjetaRuta();
   dibujar();
 }
 
-// ------------------------------------------------------------------ inicio
-(async function iniciar() {
-  const info = await api("GET", "/api/informacion");
-  llenarTabla(
-    el("tabla-info").querySelector("tbody"),
-    info.map((f) => [
-      f.algoritmo,
-      {
-        h: f.estructuras
-          .split(", ")
+/** Tarjeta con el detalle de la ruta elegida (mismos datos que la tabla). */
+function pintarTarjetaRuta() {
+  const caja = el("detalle-ruta");
+  const actual = resultados.find((r) => r.algoritmo === algoritmoElegido);
+  if (!resultados.length || !actual) {
+    caja.innerHTML =
+      '<p class="ruta-vacia">Elegí un origen y un destino y ejecutá la búsqueda para ver acá la ruta.</p>';
+    return;
+  }
+  const selector =
+    resultados.length > 1
+      ? '<div class="selector-algoritmo" role="group" aria-label="Algoritmo mostrado">' +
+        resultados
           .map(
-            (nombre) =>
-              `<span class="etiqueta-estructura">${esc(nombre)}</span>`,
+            (r) =>
+              `<button type="button" data-algoritmo="${esc(r.algoritmo)}" aria-pressed="${r.algoritmo === actual.algoritmo}">${esc(r.algoritmo)}</button>`,
           )
-          .join(" "),
-      },
-      f.funcionamiento,
-      f.complejidad_temporal,
-      f.complejidad_espacial,
-    ]),
-  );
-  await intentar(api("GET", "/api/grafo"));
+          .join("") +
+        "</div>"
+      : `<div class="selector-algoritmo"><button type="button" aria-pressed="true" disabled>${esc(actual.algoritmo)}</button></div>`;
+  let cuerpo;
+  if (!actual.ruta) {
+    cuerpo = '<p class="ruta-sin">No hay ruta entre esos nodos.</p>';
+  } else {
+    const ultimo = actual.ruta.length - 1;
+    const pasos = actual.ruta
+      .map(
+        (n, i) =>
+          `<span class="paso${i === 0 ? " origen" : i === ultimo ? " destino" : ""}">${esc(n)}</span>`,
+      )
+      .join('<span class="union" aria-hidden="true"></span>');
+    const distancia =
+      actual.distancia === null
+        ? "∞"
+        : Number(actual.distancia.toFixed(2)).toLocaleString("es-AR");
+    cuerpo =
+      `<div class="ruta-secuencia" aria-label="Ruta: ${esc(actual.ruta.join(" a "))}">${pasos}</div>` +
+      `<p class="ruta-distancia"><b>${esc(distancia)}</b>distancia total</p>`;
+  }
+  caja.innerHTML =
+    selector +
+    cuerpo +
+    '<dl class="ruta-metricas">' +
+    `<div><dt>Tiempo</dt><dd>${fmt(actual.tiempo_ms, 4)} ms</dd></div>` +
+    `<div><dt>Memoria</dt><dd>${fmt(actual.memoria_kb, 1)} KB</dd></div>` +
+    `<div><dt>Nodos explorados</dt><dd>${esc(actual.nodos_explorados)}</dd></div>` +
+    "</dl>";
+  caja
+    .querySelectorAll("button[data-algoritmo]")
+    .forEach((b) =>
+      b.addEventListener("click", () => elegirResultado(b.dataset.algoritmo)),
+    );
+}
+
+// ------------------------------------------------------------------ inicio
+/** Restaura la última ejecución guardada si sigue siendo válida para el grafo actual. */
+function restaurarResultados() {
+  const guardado = leerResultado(CLAVE_GUARDADO);
+  const previo = guardado?.datos;
+  if (!previo?.resultados?.length) return;
+  const nombres = grafo.nodos.map((n) => n.nombre);
+  const vigente =
+    JSON.stringify(previo.grafo) === JSON.stringify(grafo) &&
+    nombres.includes(previo.origen) &&
+    nombres.includes(previo.destino);
+  if (!vigente) {
+    guardarResultado(CLAVE_GUARDADO, null);
+    return;
+  }
+  el("origen").value = previo.origen;
+  el("destino").value = previo.destino;
+  resultados = previo.resultados;
+  const usados = new Set(resultados.map((r) => r.algoritmo));
+  document.querySelectorAll(".alg").forEach((c) => (c.checked = usados.has(c.value)));
+  mostrarResultados();
+  elegirResultado(resultados[resultados.length - 1].algoritmo, false);
+  el("estado-resultados").textContent = etiquetaResultadoGuardado(guardado);
+}
+
+(async function iniciar() {
+  // La carga inicial no borra la última ejecución guardada.
+  await intentar(api("GET", "/api/grafo"), false);
   el("origen").value = grafo.nodos[0] ? grafo.nodos[0].nombre : "";
   el("destino").value = grafo.nodos.length
     ? grafo.nodos[grafo.nodos.length - 1].nombre
     : "";
+  restaurarResultados();
+  if (!resultados.length) mostrarResultados();
   dibujar();
 })().catch((error) => mensaje(error.message, true));

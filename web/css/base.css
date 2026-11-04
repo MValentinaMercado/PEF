@@ -1,0 +1,88 @@
+/* ==========================================
+   ESTILOS BASE
+   ========================================== */
+
+* {
+
+  box-sizing: border-box;
+
+}
+
+
+
+html {
+
+  background: var(--fondo);
+
+}
+
+
+
+body {
+
+  margin: 0;
+
+  min-height: 100vh;
+
+  font:
+
+    15px/1.6 "Segoe UI Variable Text",
+
+    "Segoe UI",
+
+    Inter,
+
+    ui-sans-serif,
+
+    system-ui,
+
+    -apple-system,
+
+    BlinkMacSystemFont,
+
+    sans-serif;
+
+  color: var(--texto);
+
+  background-color: var(--fondo);
+
+  /* Resplandor ambiental naranja desde la esquina superior izquierda,*
+
+*     limitado a la primera pantalla para que se desvanezca al desplazarse */
+
+  background-image: radial-gradient(
+
+    circle at left top,
+
+    rgba(255, 166, 77, 0.3),
+
+    transparent 35%
+
+  );
+
+  background-size: 100% 100vh;
+
+  background-repeat: no-repeat;
+
+}
+
+
+
+a {
+
+  color: var(--naranja-texto);
+
+  text-underline-offset: 3px;
+
+}
+
+
+
+a:hover {
+
+  color: var(--naranja);
+
+}
+
+
+

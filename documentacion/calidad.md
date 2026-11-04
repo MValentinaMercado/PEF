@@ -8,10 +8,10 @@ El pipeline se organiza en **etapas** (jobs). Las que no dependen entre sí corr
 
 1.  `secretos`: Gitleaks.
 2.  `estatica`: Ruff, mypy, Vulture, Pylint, Radon y Bandit.
-3.  [Pruebas y perfilado](pruebas.md): arranque, pytest con cobertura y SonarQube Cloud.
-4.  `seguridad_y_docs`: pip-audit, MkDocs (sitio externo y enlaces) y Sphinx (referencia interna).
-5.  [Rendimiento](rendimiento.md): Performance Gate, Memory Gate y profiling de CPU (necesita que 1 a 4 hayan aprobado).
-6.  `resultado`: **Resultado final**, Aprobado o Rechazado. Es el check que debe exigir la protección de la rama `main`.
+3.  `pruebas`: comprobación de arranque, pytest con cobertura y análisis SonarQube Cloud (este último solo si existe `SONAR_TOKEN`).
+4.  `seguridad_y_docs`: pip-audit, construcción estricta de MkDocs y Sphinx, y validación de enlaces con Lychee.
+5.  `rendimiento`: Performance Gate, Memory Gate y profiling de CPU. Depende de que las cuatro etapas anteriores hayan terminado correctamente.
+6.  `resultado`: comprueba los resultados de las cinco etapas y publica **Aprobado** o **Rechazado**. Es el check que debe exigir la protección de `main`.
 
 Cada paso **falla** en cuanto incumple su criterio:
 
@@ -25,15 +25,15 @@ Cada paso **falla** en cuanto incumple su criterio:
 | Gitleaks         | Secretos (tokens, claves, contraseñas) en todo el historial.                                                                          | Cualquier secreto encontrado.                                                                                                                                                 |
 | Radon            | Complejidad ciclomática por función e índice de mantenibilidad por archivo.                                                           | Una función de rango C o peor (complejidad mayor que 10) o un archivo con mantenibilidad de rango C.                                                                          |
 | pip-audit        | Dependencias con vulnerabilidades conocidas (CVE).                                                                                    | Cualquier vulnerabilidad conocida.                                                                                                                                            |
-| MkDocs | El sitio se construye con `--strict` (enlaces y referencias internas válidos) y los enlaces externos responden (Lychee; se ignoran las direcciones `127.0.0.1` de los ejemplos). | Cualquier advertencia, enlace roto o enlace externo caído. |
+| MkDocs y Lychee | MkDocs construye el sitio con `--strict`; Lychee revisa los HTML generados y el README. | Una advertencia de MkDocs o un enlace que Lychee no puede validar. |
 | Sphinx | La referencia interna se construye con `-W`. | Cualquier advertencia o referencia rota. |
 | pytest           | Todas las pruebas y la cobertura (`coverage.xml`).                                                                                    | Una prueba falla o la cobertura baja del `fail_under` de `pyproject.toml` (80 %). El resumen de pruebas queda en la página de la corrida.                                     |
-| SonarQube Cloud  | Quality Gate sobre el código nuevo.                                                                                                   | El Quality Gate no se cumple.                                                                                                                                                 |
-| Performance Gate | Mediana de Dijkstra con 100.000 nodos (`rutas/performance_gate.py`).                                                                  | Mediana de 500 ms o más. Con el cambio de `regresion_rendimiento.patch` (lista en vez de conjunto) la mediana sube unas 24 veces en un grafo de 20.000 nodos y el gate falla. |
-| Memory Gate      | Pico de memoria de Dijkstra con 100.000 nodos, medido con `tracemalloc` (`rutas/memory_gate.py`).                                     | Más de 32 MiB (el pico medido es de 15,2 MiB y es idéntico en cada corrida).                                                                                                  |
+| SonarQube Cloud  | Quality Gate sobre el código nuevo, si existe `SONAR_TOKEN`. | Falla si el Quality Gate no se cumple; sin el secret, el paso se omite. |
+| Performance Gate | Mediana de Dijkstra con 100.000 nodos (`rutas/performance_gate.py`). | Supera el umbral configurado en el módulo; el valor medido depende del entorno y se consulta en el log. |
+| Memory Gate      | Pico de memoria de Dijkstra con 100.000 nodos, medido con `tracemalloc` (`rutas/memory_gate.py`). | Supera el límite configurado en el módulo; el valor medido se consulta en el log. |
 | Profiling de CPU | `cProfile` sobre los tres algoritmos; deja un `.prof` por algoritmo y un resumen.                                                     | Informativo, no bloquea: el bloqueo por CPU lo hace el Performance Gate.                                                                                                      |
 
-Cada etapa guarda sus informes como artefactos de la corrida: `evidencias-estatica` (`bandit.json`, `radon-*.json`), `evidencias-pruebas` (`resultados.xml`, `coverage.xml`), `evidencias-seguridad-docs` (`pip-audit.json`, versiones exactas instaladas y resultado de los enlaces) y `evidencias-rendimiento` (perfiles `.prof`).
+Los jobs que generan evidencias las publican como artefactos de la corrida: `evidencias-estatica` (`bandit.json`, `radon-*.json`), `evidencias-pruebas` (`resultados.xml`, `coverage.xml`), `evidencias-seguridad-docs` (`pip-audit.json` y `requirements-resuelto.txt`) y `evidencias-rendimiento` (perfiles `.prof`).
 
 Los controles de tiempo y de memoria no se tratan igual: el tiempo varía con la máquina, así que se usa la **mediana** de varias corridas y un umbral con margen; la memoria medida con `tracemalloc` es determinista, por eso alcanza una sola medición con un límite del doble de lo observado.
 
@@ -48,7 +48,7 @@ Configuración:
 - `pyproject.toml`: `relative_files = true` hace que `coverage.xml` traiga rutas como `api/app.py`, que es como SonarQube asocia la cobertura a los archivos del repositorio.
 - En SonarQube Cloud hay que tener desactivado el *análisis automático*, que no admite cobertura y se pisa con el análisis desde el pipeline.
 
-La ventana **Calidad** no analiza nada: consulta la API de SonarQube Cloud (`GET /api/calidad/sonar`) y muestra el estado del Quality Gate, sus condiciones y las métricas. Si el proyecto fuera privado, se define la variable de entorno `SONAR_TOKEN`.
+La ventana **Calidad** no vuelve a ejecutar los controles: consulta SonarQube Cloud (`GET /api/calidad/sonar`) y GitHub Actions (`GET /api/calidad/ci`). El resultado del pipeline corresponde a la última corrida que GitHub devuelve para `main`; sus etapas y registros se obtienen de los jobs de esa misma corrida. El historial de la interfaz es un resumen de las cinco corridas más recientes; GitHub conserva el detalle completo.
 
 ## Qué agrega SonarQube respecto de las demás herramientas
 
@@ -60,8 +60,6 @@ Las herramientas locales dan respuesta inmediata y bloquean problemas antes del 
 
   - `B404` y `B603` (`subprocess`): los comandos son listas fijas y no usan `shell`; nunca incluyen texto del usuario.
   - `B311` (`random`): se usa para generar grafos y consultas de prueba, no para nada criptográfico.
-
-  El único hallazgo medio (`B314`) era el análisis del XML de `pytest` con `xml.etree`; se resolvió usando `defusedxml`.
 
 - **pip-audit** compara las dependencias de `requirements.txt` con la base de vulnerabilidades conocidas. Criterio: falla con cualquier vulnerabilidad.
 
@@ -120,7 +118,7 @@ pytest --cov --cov-report=xml
 
 ## Estado del pipeline en la ventana Calidad
 
-Además del Quality Gate de SonarQube, la ventana **Calidad** muestra el resultado real de la última corrida de `ci.yml` en `main`: veredicto, etapas con su duración, el paso que falló (por ejemplo, `Seguridad del código (Bandit)`), el historial de las últimas 10 corridas y un enlace a los registros completos en GitHub Actions. No ejecuta ni simula nada: lee la API de GitHub desde el servidor (`api.ci_github`).
+Además del Quality Gate de SonarQube, la ventana **Calidad** muestra el resultado real de la última corrida de `ci.yml` en `main`: veredicto, etapas con su duración, el paso que falló (por ejemplo, `Seguridad del código (Bandit)`), el historial resumido de las últimas cinco corridas y un enlace a los registros completos en GitHub Actions. No ejecuta ni simula nada: lee la API de GitHub desde el servidor (`api.ci_github`).
 
 | Variable de entorno | Para qué sirve |
 |---|---|

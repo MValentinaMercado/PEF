@@ -24,7 +24,7 @@ from rutas.procesos import RAIZ
 URL_API = "https://api.github.com"
 FLUJO = "ci.yml"
 RAMA = "main"
-HISTORIAL = 10
+HISTORIAL = 5
 TIEMPO_ESPERA_S = 15
 PATRON_REPOSITORIO = re.compile(
     r"github\.com[:/]+(?P<repo>[\w.-]+/[\w.-]+?)(?:\.git)?/?$"
@@ -175,6 +175,7 @@ def resumir_corrida(corrida: dict) -> dict:
         "evento": corrida.get("event", ""),
         "titulo": corrida.get("display_title", ""),
         "inicio": corrida.get("run_started_at"),
+        "actualizada": corrida.get("updated_at"),
         "segundos": segundos_entre(
             corrida.get("run_started_at"), corrida.get("updated_at")
         ),
@@ -183,7 +184,7 @@ def resumir_corrida(corrida: dict) -> dict:
 
 
 def resumir_etapas(trabajos: list[dict]) -> list[dict]:
-    """Una fila por etapa (job) y, si falló, el paso que lo hizo fallar.
+    """Resume cada job real, sus pasos y el primer paso que falló.
 
     >>> filas = resumir_etapas([{"name": "Pruebas", "status": "completed",
     ...     "conclusion": "failure", "html_url": "https://x",
@@ -201,6 +202,15 @@ def resumir_etapas(trabajos: list[dict]) -> list[dict]:
             "segundos": segundos_entre(
                 trabajo.get("started_at"), trabajo.get("completed_at")
             ),
+            "controles": [
+                {
+                    "nombre": paso.get("name", "Paso sin nombre"),
+                    "estado": estado_legible(
+                        paso.get("status", "completed"), paso.get("conclusion")
+                    ),
+                }
+                for paso in trabajo.get("steps", [])
+            ],
             "paso_fallido": next(
                 (
                     paso["name"]
@@ -215,10 +225,38 @@ def resumir_etapas(trabajos: list[dict]) -> list[dict]:
     ]
 
 
+def _resumen_historial(historial: list[dict]) -> str:
+    """Cuenta las corridas del historial por estado."""
+    cuenta = {
+        estado: sum(c["estado"] == estado for c in historial)
+        for estado in ("aprobado", "rechazado", "cancelado", "omitido")
+    }
+    en_curso = sum(c["estado"] == "en curso" for c in historial)
+    sin_resultado = len(historial) - sum(cuenta.values()) - en_curso
+    return (
+        f" En las últimas {len(historial)} corridas: "
+        f"{cuenta['aprobado']} aprobadas, {cuenta['rechazado']} rechazadas, "
+        f"{cuenta['cancelado']} canceladas, {cuenta['omitido']} omitidas, "
+        f"{en_curso} en curso y {sin_resultado} sin resultado."
+    )
+
+
+def _detalle_no_aprobadas(etapas: list[dict]) -> str:
+    """Lista las etapas no aprobadas, con el paso que falló si se conoce."""
+    no_aprobadas = [
+        f"{e['nombre']} ({e['estado']}"
+        + (f", paso «{e['paso_fallido']}»" if e["paso_fallido"] else "")
+        + ")"
+        for e in etapas
+        if e["estado"] != "aprobado"
+    ]
+    return "; ".join(no_aprobadas) if no_aprobadas else "sin detalle de etapas"
+
+
 def concluir_ci(
     ultima: dict, etapas: list[dict], historial: list[dict]
 ) -> str:
-    """Conclusión sobre el estado del pipeline, por reglas fijas.
+    """Redacta un resumen del resultado y de las cinco corridas más recientes.
 
     >>> ult = {"numero": 12, "estado": "aprobado"}
     >>> et = [{"nombre": "Pruebas", "estado": "aprobado",
@@ -232,12 +270,7 @@ def concluir_ci(
     True
     """
     numero = ultima["numero"]
-    aprobadas = sum(c["estado"] == "aprobado" for c in historial)
-    rechazadas = sum(c["estado"] == "rechazado" for c in historial)
-    resumen = (
-        f" De las últimas {len(historial)} corridas, {aprobadas} se aprobaron "
-        f"y {rechazadas} se rechazaron."
-    )
+    resumen = _resumen_historial(historial)
     if ultima["estado"] == "en curso":
         return f"La corrida #{numero} todavía se está ejecutando." + resumen
     if ultima["estado"] == "aprobado":
@@ -245,16 +278,10 @@ def concluir_ci(
             f"La última corrida en {RAMA} (#{numero}) fue aprobada: "
             f"{len(etapas)} etapas terminaron bien." + resumen
         )
-    fallas = [
-        f"{e['nombre']}"
-        + (f" (paso «{e['paso_fallido']}»)" if e["paso_fallido"] else "")
-        for e in etapas
-        if e["estado"] == "rechazado"
-    ]
-    detalle = "; ".join(fallas) if fallas else "sin detalle de etapas"
     return (
         f"La última corrida en {RAMA} (#{numero}) terminó "
-        f"{ultima['estado']}. Etapas con error: {detalle}." + resumen
+        f"{ultima['estado']}. Etapas no aprobadas: "
+        f"{_detalle_no_aprobadas(etapas)}." + resumen
     )
 
 

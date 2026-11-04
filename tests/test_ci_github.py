@@ -62,6 +62,10 @@ def test_el_estado_del_ci_resume_corrida_etapas_e_historial(
     assert datos["ultima"]["segundos"] == 180
     assert [c["numero"] for c in datos["historial"]] == [42, 41]
     assert datos["etapas"][0]["segundos"] == 120
+    assert datos["etapas"][0]["controles"][0] == {
+        "nombre": "pytest",
+        "estado": "aprobado",
+    }
     assert "aprobada" in datos["conclusion"]
     assert datos["panel"].endswith("/actions/workflows/ci.yml")
     # La segunda consulta es de los jobs de la corrida más reciente.
@@ -88,7 +92,9 @@ def test_una_corrida_rechazada_explica_que_paso_fallo(cliente, monkeypatch):
     assert datos["ultima"]["estado"] == "rechazado"
     assert datos["etapas"][0]["paso_fallido"] == "Bandit"
     assert "rechazado" in datos["conclusion"]
-    assert "Pruebas y cobertura (paso «Bandit»)" in datos["conclusion"]
+    assert (
+        "Pruebas y cobertura (rechazado, paso «Bandit»" in datos["conclusion"]
+    )
 
 
 def test_una_corrida_en_curso_se_indica(cliente, monkeypatch):
@@ -220,3 +226,20 @@ def test_el_pipeline_incluye_los_jobs_que_la_ventana_muestra():
     ).read_text(encoding="utf-8")
     assert "name: Resultado final" in flujo
     assert f"branches: [{ci_github.RAMA}]" in flujo
+
+
+def test_el_resumen_del_historial_incluye_canceladas_y_etapas_omitidas():
+    ultima = {"numero": 50, "estado": "rechazado"}
+    etapas = [
+        {"nombre": "Pruebas", "estado": "rechazado", "paso_fallido": "pytest"},
+        {"nombre": "Rendimiento", "estado": "omitido", "paso_fallido": None},
+    ]
+    historial = [
+        ultima,
+        {"numero": 49, "estado": "cancelado"},
+        {"numero": 48, "estado": "aprobado"},
+    ]
+    conclusion = ci_github.concluir_ci(ultima, etapas, historial)
+    assert "Pruebas (rechazado, paso «pytest»)" in conclusion
+    assert "Rendimiento (omitido)" in conclusion
+    assert "1 canceladas" in conclusion

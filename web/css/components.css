@@ -1,0 +1,867 @@
+/* ==========================================
+   COMPONENTES
+   ========================================== */
+
+/* ---------- Controles ---------- */
+
+
+
+.barra {
+
+  display: flex;
+
+  flex-wrap: wrap;
+
+  gap: 10px 14px;
+
+  align-items: flex-end;
+
+  margin: 16px 0;
+
+}
+
+
+
+/* Etiqueta de campo (origen, destino): texto arriba, control debajo */
+
+.barra label:has(select) {
+
+  display: grid;
+
+  gap: 5px;
+
+  flex: 1 1 130px;
+
+  color: var(--suave);
+
+  font-size: 0.82rem;
+
+  font-weight: 600;
+
+}
+
+
+
+/* En la tarjeta de búsqueda: origen y destino en una fila, chips debajo, botón a todo el ancho */
+
+.tarjeta-buscar .barra {
+
+  gap: 12px 8px;
+
+}
+
+
+
+.tarjeta-buscar .barra label:has(select) {
+
+  flex: 1 1 calc(50% - 8px);
+
+  margin-bottom: 4px;
+
+}
+
+
+
+.tarjeta-buscar .barra > button {
+
+  flex: 1 0 100%;
+
+  margin-top: 8px;
+
+  min-height: 46px;
+
+}
+
+
+
+/* Algoritmos como chips seleccionables */
+
+.barra label:has(.alg) {
+
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 8px;
+
+  min-height: 40px;
+
+  padding: 0 14px 0 12px;
+
+  color: var(--texto);
+
+  background: var(--superficie);
+
+  border: 1px solid var(--borde);
+
+  border-radius: 999px;
+
+  font-size: 0.9rem;
+
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+
+    background 0.2s var(--ease),
+
+    border-color 0.2s var(--ease),
+
+    box-shadow 0.2s var(--ease);
+
+}
+
+
+
+.barra label:has(.alg):hover {
+
+  background: rgba(255, 213, 163, 0.28);
+
+  border-color: var(--naranja-suave);
+
+}
+
+
+
+.barra label:has(.alg:checked) {
+
+  background: var(--naranja-tinte);
+
+  border-color: var(--naranja-2);
+
+  color: var(--naranja-texto);
+
+}
+
+
+
+.barra label:has(.alg:focus-visible) {
+
+  box-shadow: var(--anillo);
+
+}
+
+
+
+.barra label:has(.alg) .alg {
+
+  margin: 0;
+
+  outline: none;
+
+}
+
+
+
+.barra > label:not(:has(select)):not(:has(.alg)) {
+
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 6px;
+
+}
+
+
+
+button,
+
+select,
+
+input {
+
+  font: inherit;
+
+  color: inherit;
+
+}
+
+
+
+button,
+
+select {
+
+  min-height: 42px;
+
+  border: 1px solid var(--borde);
+
+  border-radius: 14px;
+
+  background: var(--superficie);
+
+}
+
+
+
+button {
+
+  padding: 6px 18px;
+
+  cursor: pointer;
+
+  font-weight: 650;
+
+  transition:
+
+    border-color 0.2s var(--ease),
+
+    background 0.2s var(--ease),
+
+    box-shadow 0.2s var(--ease),
+
+    transform 0.15s var(--ease);
+
+}
+
+
+
+button:hover:not(:disabled) {
+
+  border-color: var(--naranja-2);
+
+  background: var(--naranja-tinte);
+
+}
+
+
+
+button:active:not(:disabled) {
+
+  transform: translateY(1px);
+
+}
+
+
+
+/* Botón principal: naranja de identidad (texto oscuro para contraste) */
+
+button.principal {
+
+  color: var(--sobre-naranja);
+
+  background: var(--naranja);
+
+  border-color: var(--naranja);
+
+  box-shadow: 0 8px 18px -8px rgba(242, 140, 40, 0.65);
+
+}
+
+
+
+button.principal:hover:not(:disabled) {
+
+  background: var(--naranja-2);
+
+  border-color: var(--naranja-2);
+
+}
+
+
+
+button:disabled {
+
+  opacity: 0.55;
+
+  cursor: wait;
+
+}
+
+
+
+select {
+
+  width: 100%;
+
+  padding: 4px 12px;
+
+  cursor: pointer;
+
+  transition:
+
+    border-color 0.2s var(--ease),
+
+    box-shadow 0.2s var(--ease);
+
+}
+
+
+
+select:hover {
+
+  border-color: var(--naranja-suave);
+
+}
+
+
+
+select:focus,
+
+input:not([type]):focus,
+
+input[type="text"]:focus,
+
+input[type="number"]:focus {
+
+  outline: none;
+
+  border-color: var(--naranja);
+
+  box-shadow: var(--anillo);
+
+}
+
+
+
+input[type="checkbox"],
+
+input[type="radio"] {
+
+  accent-color: var(--naranja);
+
+}
+
+
+
+:focus-visible {
+
+  outline: 2px solid var(--naranja);
+
+  outline-offset: 2px;
+
+}
+
+
+
+
+/* ---------- Tarjeta de resultado de la ruta ---------- */
+
+
+
+.tarjeta-ruta h2 {
+
+  margin-bottom: 4px;
+
+}
+
+
+
+.selector-algoritmo {
+
+  display: flex;
+
+  flex-wrap: wrap;
+
+  gap: 6px;
+
+  margin: 14px 0 4px;
+
+}
+
+
+
+.selector-algoritmo button {
+
+  min-height: 34px;
+
+  padding: 2px 14px;
+
+  border-radius: 999px;
+
+  color: var(--suave);
+
+  font-size: 0.85rem;
+
+}
+
+
+
+.selector-algoritmo button[aria-pressed="true"] {
+
+  background: var(--naranja-tinte);
+
+  border-color: var(--naranja);
+
+  color: var(--naranja-texto);
+
+}
+
+
+
+.ruta-vacia {
+
+  margin: 14px 0 0;
+
+  padding: 22px 18px;
+
+  text-align: center;
+
+  color: var(--suave);
+
+  background: var(--fondo-suave);
+
+  border: 1px dashed var(--borde);
+
+  border-radius: var(--radio-md);
+
+  font-size: 0.9rem;
+
+}
+
+
+
+.ruta-secuencia {
+
+  display: flex;
+
+  flex-wrap: wrap;
+
+  align-items: center;
+
+  gap: 6px;
+
+  margin: 18px 0 4px;
+
+}
+
+
+
+.ruta-secuencia .paso {
+
+  display: inline-grid;
+
+  place-items: center;
+
+  min-width: 36px;
+
+  height: 36px;
+
+  padding: 0 8px;
+
+  border: 2px solid var(--naranja);
+
+  border-radius: 999px;
+
+  background: var(--naranja-tinte);
+
+  color: var(--naranja-texto);
+
+  font-weight: 700;
+
+  font-size: 0.9rem;
+
+}
+
+
+
+.ruta-secuencia .paso.origen {
+
+  background: var(--naranja);
+
+  color: var(--sobre-naranja);
+
+}
+
+
+
+.ruta-secuencia .paso.destino {
+
+  background: var(--texto-fuerte);
+
+  border-color: var(--naranja);
+
+  color: #fff;
+
+}
+
+
+
+.ruta-secuencia .union {
+
+  width: 14px;
+
+  height: 3px;
+
+  border-radius: 3px;
+
+  background: var(--naranja);
+
+}
+
+
+
+.ruta-distancia {
+
+  margin: 18px 0 0;
+
+  color: var(--suave);
+
+  font-size: 0.85rem;
+
+}
+
+
+
+.ruta-distancia b {
+
+  display: block;
+
+  color: var(--naranja-texto);
+
+  font-size: 2.4rem;
+
+  font-weight: 700;
+
+  line-height: 1.1;
+
+  letter-spacing: -0.03em;
+
+}
+
+
+
+.ruta-metricas {
+
+  display: grid;
+
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+
+  gap: 10px;
+
+  margin: 18px 0 0;
+
+  padding-top: 16px;
+
+  border-top: 1px solid var(--borde-claro);
+
+}
+
+
+
+.ruta-metricas div {
+
+  min-width: 0;
+
+}
+
+
+
+.ruta-metricas dt {
+
+  color: var(--suave);
+
+  font-size: 0.76rem;
+
+}
+
+
+
+.ruta-metricas dd {
+
+  margin: 2px 0 0;
+
+  color: var(--texto-fuerte);
+
+  font-size: 0.95rem;
+
+  font-weight: 650;
+
+  font-variant-numeric: tabular-nums;
+
+  overflow-wrap: anywhere;
+
+}
+
+
+
+.ruta-sin {
+
+  margin: 18px 0 0;
+
+  padding: 14px 16px;
+
+  border-radius: var(--radio-sm);
+
+  background: rgba(201, 80, 74, 0.07);
+
+  color: var(--error);
+
+  font-weight: 600;
+
+}
+
+
+
+
+/* Un mismo lenguaje para botones: claros, redondeados y con borde sutil. */
+
+button {
+
+  min-height: 40px;
+
+  padding: 7px 18px;
+
+  border: 1px solid #e9e4dc;
+
+  border-radius: 999px;
+
+  background: #fff;
+
+  color: #514d47;
+
+  box-shadow: 0 1px 2px rgba(60, 48, 32, 0.025);
+
+  font-weight: 650;
+
+}
+
+
+
+button:hover:not(:disabled) {
+
+  border-color: #d8cfc2;
+
+  background: #faf8f4;
+
+  box-shadow: 0 3px 10px rgba(60, 48, 32, 0.055);
+
+}
+
+
+
+button:active:not(:disabled) {
+
+  transform: translateY(1px);
+
+  box-shadow: none;
+
+}
+
+
+
+/* Los botones de acción mantienen el naranja de la identidad, con la misma forma. */
+
+button.principal {
+
+  color: #3b2506;
+
+  background: var(--naranja);
+
+  border-color: var(--naranja);
+
+  border-radius: 999px;
+
+  box-shadow: 0 7px 16px -8px rgba(242, 140, 40, 0.58);
+
+}
+
+
+
+button.principal:hover:not(:disabled) {
+
+  color: #3b2506;
+
+  background: #ff9c3d;
+
+  border-color: #ff9c3d;
+
+}
+
+
+
+/* Botones compactos y utilitarios conservan su escala, no una apariencia distinta. */
+
+.acciones-grafo .accion {
+
+  min-height: 38px;
+
+  padding: 5px 15px;
+
+  border-radius: 999px;
+
+}
+
+
+
+.cmd {
+
+  border-radius: 999px;
+
+}
+
+
+
+.cmd-copiar {
+
+  border-radius: 999px;
+
+}
+
+
+
+
+/* BOTONES GENERALES */
+
+button,
+
+button.principal,
+
+button.secundario,
+
+button.accion,
+
+.acciones-grafo .accion {
+
+  min-height: 40px;
+
+  padding: 7px 18px;
+
+  color: #514e49 !important;
+
+  background: #fff !important;
+
+  border: 1px solid #eae6df !important;
+
+  border-radius: 999px !important;
+
+  box-shadow: 0 1px 3px rgba(60, 48, 32, 0.035) !important;
+
+  font-weight: 600;
+
+  transition: all 0.2s ease;
+
+}
+
+
+
+/* HOVER */
+
+button:hover:not(:disabled),
+
+button.principal:hover:not(:disabled),
+
+button.secundario:hover:not(:disabled) {
+
+  color: #34322f !important;
+
+  background: #faf8f4 !important;
+
+  border-color: #dcd6cd !important;
+
+  box-shadow: 0 3px 9px rgba(60, 48, 32, 0.07) !important;
+
+}
+
+
+
+/* BOTONES DESHABILITADOS */
+
+button:disabled {
+
+  opacity: 0.5;
+
+  cursor: not-allowed;
+
+}
+
+
+
+/* BOTÓN DE ELIMINAR */
+
+.acciones-grafo .peligro {
+
+  color: #bd625c !important;
+
+}
+
+
+
+/* CHIPS BFS, DIJKSTRA Y A\* */
+
+.barra label:has(.alg),
+
+.barra label:has(.alg:checked) {
+
+  color: #514e49 !important;
+
+  background: #fff !important;
+
+  border: 1px solid #eae6df !important;
+
+  box-shadow: none !important;
+
+}
+
+
+
+.barra label:has(.alg:checked) {
+
+  border-color: #d9d3ca !important;
+
+}
+
+
+
+.barra label:has(.alg):hover {
+
+  background: #faf8f4 !important;
+
+}
+
+
+
+/* HERRAMIENTAS DEL EDITOR */
+
+.herramienta.activa {
+
+  background: #fff !important;
+
+  border: 1px solid #e5e0d8 !important;
+
+  box-shadow: 0 2px 6px rgba(60, 48, 32, 0.05) !important;
+
+}
+
+
+
+.herramienta.activa strong {
+
+  color: #514e49 !important;
+
+}
+
+
+
+/* SELECTOR DE ALGORITMOS */
+
+.selector-algoritmo button[aria-pressed="true"] {
+
+  background: #f7f5f0 !important;
+
+  border-color: #dcd6cd !important;
+
+  color: #514e49 !important;
+
+}
+
+
+
+/* BOTONES DE CÓDIGO */
+
+.cmd,
+
+.cmd-copiar {
+
+  background: #fff !important;
+
+  border: 1px solid #eae6df !important;
+
+  color: #514e49 !important;
+
+}
+
+
+

@@ -10,7 +10,7 @@ Este documento explica **qué** se decidió y **por qué**, para que quien modif
 
 ## Conjunto en lugar de lista para los nodos cerrados
 
-`cerrados` es un `set`: preguntar `actual in cerrados` es O(1). Con una lista sería O(n) por pregunta y el algoritmo se vuelve cuadrático. Está comprobado: `regresion_rendimiento.patch` hace ese cambio y la mediana de Dijkstra pasa de 12,6 ms a 306 ms con 20.000 nodos, unas 24 veces más lenta, sin que ninguna prueba funcional falle (el resultado es el mismo, solo cambia el tiempo).
+`cerrados` es un `set`: preguntar `actual in cerrados` es O(1). Con una lista sería O(n) por pregunta y el algoritmo se vuelve cuadrático. Una prueba funcional puede seguir pasando aunque una estructura de datos vuelva más lento el algoritmo; por eso el proyecto incorpora un Performance Gate independiente de las pruebas de corrección.
 
 *Cómo se verifica:* el Performance Gate falla con ese cambio. Es el motivo por el que existe: las pruebas de corrección no detectan una regresión de rendimiento.
 
@@ -58,7 +58,7 @@ Se escribe con buffer (`writelines`) y se lee por lotes con `itertools.islice`, 
 
 | Control          | Umbral | Justificación                                                                                                                                                                                   |
 |------------------|--------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Performance Gate | 500 ms | Dijkstra tarda unos 180 ms con 100.000 nodos: el margen absorbe la variación entre máquinas, y la regresión de la lista es mucho más lenta (con 100.000 nodos una sola consulta tarda minutos). |
-| Memory Gate      | 32 MiB | El pico medido es de 15,2 MiB y no cambia entre corridas; el límite es el doble para tolerar diferencias entre versiones de Python.                                                             |
-| Cobertura        | 80 %   | La cobertura real supera el 99 %; el umbral deja margen para código nuevo sin permitir que se abandonen las pruebas.                                                                            |
+| Performance Gate | 500 ms | Umbral configurado en `rutas/performance_gate.py`; el valor observado se obtiene de cada corrida y depende del entorno. |
+| Memory Gate      | 32 MiB | Límite configurado en `rutas/memory_gate.py`; el pico observado se obtiene del registro de cada corrida. |
+| Cobertura        | 80 %   | Umbral `fail_under` configurado en `pyproject.toml`; el porcentaje real se obtiene de cada ejecución de pytest. |
 | Complejidad      | 10     | Una función de rango C o peor suele ser difícil de probar y de leer.                                                                                                                            |

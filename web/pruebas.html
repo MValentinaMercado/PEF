@@ -24,12 +24,10 @@
           Pruebas del proyecto
         </h2>
         <p>
-          Se ejecutan las pruebas de todo el proyecto con <code>pytest</code>.
-          Se combinan <code>unittest</code> para unidades individuales,
-          <code>pytest</code> con fixtures (incluye pruebas de la API con
-          <code>TestClient</code>), <code>doctest</code> para verificar los
-          ejemplos de los docstrings y <code>timeit</code> para medir y comparar
-          el rendimiento de ciertas operaciones.
+          <code>pytest</code> ejecuta toda la suite: <code>unittest</code>
+          (unidades), <code>pytest</code> con fixtures (incluye la API con
+          <code>TestClient</code>), <code>doctest</code> (ejemplos de los
+          docstrings) y <code>timeit</code> (rendimiento).
         </p>
         <div class="barra">
           <button class="principal" id="btn-pruebas">
@@ -38,6 +36,9 @@
           <span class="estado" id="estado-pruebas"></span>
         </div>
         <div class="resumen" id="resumen"></div>
+        <p class="nota">
+          “No aprobadas” suma fallos y errores; las omitidas se cuentan aparte.
+        </p>
         <div class="tabla-scroll">
           <table id="tabla-tipos">
             <thead>
@@ -46,14 +47,20 @@
                 <th>Total</th>
                 <th>Aprobadas</th>
                 <th>No aprobadas</th>
+                <th>Omitidas</th>
               </tr>
             </thead>
             <tbody></tbody>
           </table>
         </div>
+        <p class="conclusion" id="analisis-tipos"></p>
         <h3 data-api="POST /api/pruebas/ejecutar" data-cmd="pytest -v">
-          Detalle
+          Detalle de casos
         </h3>
+        <p class="nota">
+          Cada fila es un caso. Se puede filtrar por tipo o mostrar solo los no
+          aprobados (fallos, errores y omitidos).
+        </p>
         <div class="barra">
           <label
             >Tipo
@@ -80,6 +87,7 @@
             <tbody></tbody>
           </table>
         </div>
+        <p class="conclusion" id="analisis-detalle"></p>
         <h3 data-api="POST /api/pruebas/ejecutar" data-cmd="pytest -q">
           Salida de pytest
         </h3>

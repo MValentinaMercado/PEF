@@ -52,9 +52,6 @@ Lógica (módulos ``rutas``)
 .. automodule:: rutas.ejemplo
    :members:
 
-.. automodule:: rutas.informacion
-   :members:
-
 .. automodule:: rutas.performance_gate
    :members:
 
@@ -77,6 +74,9 @@ API (módulos ``api``)
    :members:
 
 .. automodule:: api.calidad_router
+   :members:
+
+.. automodule:: api.optimizacion_router
    :members:
 
 .. automodule:: api.ci_github

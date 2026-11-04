@@ -16,7 +16,6 @@ Los endpoints se documentan automáticamente en `/docs` (Swagger UI) y `/redoc`.
 | `PATCH /api/aristas/bloqueo`  | Bloquea o habilita una conexión.                           |
 | `DELETE /api/aristas/{a}/{b}` | Elimina una conexión.                                      |
 | `POST /api/rutas`             | Ejecuta y mide BFS, Dijkstra y/o A\*.                      |
-| `GET /api/informacion`        | Tabla de funcionamiento y complejidades de cada algoritmo. |
 
 ## Análisis
 
@@ -44,12 +43,14 @@ Los endpoints se documentan automáticamente en `/docs` (Swagger UI) y `/redoc`.
 |----------------------------------------|------------------------------------------------------------------------------------------|
 | `POST /api/pruebas/ejecutar`           | Ejecuta `pytest` y devuelve el resultado de cada prueba.                                 |
 | `GET /api/calidad/sonar`               | Quality Gate y métricas del último análisis en SonarQube Cloud.                          |
-| `GET /api/calidad/ci`                  | Última corrida de `ci.yml` en `main` (GitHub Actions): estado, etapas, paso que falló e historial. |
+| `GET /api/calidad/ci`                  | Última corrida real de `ci.yml` en `main`: estado, etapas, controles, paso fallido, enlaces a registros e historial resumido de cinco corridas. |
 | `POST /api/optimizacion/{herramienta}` | Ejecuta una herramienta de limpieza: `ruff`, `vulture`, `pylint`, `radon` o `cobertura`. |
 | `GET /api/documentacion/estado`        | Indica si la documentación está generada y cuándo.                                       |
-| `POST /api/documentacion/generar`      | Regenera la referencia interna del código con Sphinx.                                                    |
+| `POST /api/documentacion/generar`      | Regenera la referencia interna del código con Sphinx.                                    |
+| `GET /api/documentacion/externa/estado`   | Indica si la documentación externa (MkDocs) está generada y cuándo.                   |
+| `POST /api/documentacion/externa/generar` | Regenera la documentación externa con MkDocs.                                         |
 
-Las cuatro rutas `modelo/*` devuelven, además de los números medidos, un campo `conclusion` redactada con reglas fijas (sin IA). Las tres últimas incluyen `entrenado_ahora` (`true` si hubo que entrenar el modelo antes de medir). `GET /api/calidad/ci` responde `409` si no se sabe qué repositorio consultar y `502` con un mensaje explicativo si GitHub rechaza la consulta.
+Las cuatro rutas `modelo/*` devuelven, además de los números medidos, un campo `conclusion` redactada con reglas fijas (sin IA). Las tres últimas incluyen `entrenado_ahora` (`true` si hubo que entrenar el modelo antes de medir). Las conclusiones del resto de las tablas de Análisis no las devuelve la API: se redactan en el navegador (`web/js/analisis.js`) a partir de la respuesta. `GET /api/calidad/ci` responde `409` si no se sabe qué repositorio consultar y `502` con un mensaje explicativo si GitHub rechaza la consulta.
 
 ## Ejemplos en consola
 

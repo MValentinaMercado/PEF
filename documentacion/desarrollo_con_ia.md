@@ -22,7 +22,7 @@ Una propuesta de un asistente no se acepta por venir de una IA. Se acepta si, de
 
 ## Qué revisó una persona
 
-Los umbrales de las conclusiones automáticas (10 %, 25 %, 1 ms y 1.000 estimaciones) fueron una propuesta del asistente. Son criterios de diseño y los define el equipo: están como constantes en `rutas/evaluacion_modelo.py`.
+Los umbrales de las conclusiones automáticas (10 %, 25 %, 1 ms y 1.000 estimaciones, y el 5 % con que la interfaz considera «casi iguales» dos valores) fueron una propuesta del asistente. Son criterios de diseño y los define el equipo: están como constantes en `rutas/evaluacion_modelo.py`.
 
 ## Otros usos del asistente (completar)
 

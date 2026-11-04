@@ -1,0 +1,408 @@
+/* ==========================================
+   DATA
+   ========================================== */
+
+/* ---------- Tablas ---------- */
+
+
+
+.tabla-scroll {
+
+  overflow-x: auto;
+
+  margin: 12px 0;
+
+  border: 1px solid var(--borde);
+
+  border-radius: var(--radio-md);
+
+}
+
+
+
+table {
+
+  width: 100%;
+
+  border-collapse: collapse;
+
+  font-size: 0.92rem;
+
+}
+
+
+
+.tabla-scroll table {
+
+  min-width: 640px;
+
+}
+
+
+
+th,
+
+td {
+
+  padding: 10px 14px;
+
+  text-align: left;
+
+  vertical-align: top;
+
+  border-bottom: 1px solid var(--borde-claro);
+
+}
+
+
+
+th {
+
+  background: var(--fondo-suave);
+
+  color: var(--suave);
+
+  border-bottom: 1px solid var(--borde);
+
+  font-size: 0.8rem;
+
+  font-weight: 650;
+
+  white-space: nowrap;
+
+}
+
+
+
+tbody tr:last-child td {
+
+  border-bottom: 0;
+
+}
+
+
+
+tbody tr {
+
+  transition: background 0.2s var(--ease);
+
+}
+
+
+
+td.num {
+
+  text-align: right;
+
+  white-space: nowrap;
+
+  font-variant-numeric: tabular-nums;
+
+}
+
+
+
+tr.elegible {
+
+  cursor: pointer;
+
+}
+
+
+
+tbody tr:hover {
+
+  background: rgba(255, 243, 227, 0.55);
+
+}
+
+
+
+tr.elegida,
+
+tr.elegida:hover {
+
+  background: var(--naranja-tinte);
+
+  box-shadow: inset 3px 0 0 var(--naranja);
+
+}
+
+
+
+.barra-t {
+
+  height: 8px;
+
+  min-width: 2px;
+
+  border-radius: 4px;
+
+}
+
+
+
+
+/* ---------- Código ---------- */
+
+
+
+code {
+
+  padding: 1px 6px;
+
+  background: var(--fondo-suave);
+
+  border: 1px solid var(--borde-claro);
+
+  border-radius: 6px;
+
+  color: var(--naranja-texto);
+
+  font: 0.88em var(--mono);
+
+}
+
+
+
+pre {
+
+  margin: 10px 0 0;
+
+  padding: 12px 14px;
+
+  overflow-x: auto;
+
+  background: var(--fondo-suave);
+
+  border: 1px solid var(--borde-claro);
+
+  border-radius: var(--radio-md);
+
+  font: 0.82rem/1.55 var(--mono);
+
+}
+
+
+
+.salida-consola {
+
+  white-space: pre-wrap;
+
+  overflow-wrap: anywhere;
+
+}
+
+
+
+
+/* ---------- Resultados y métricas ---------- */
+
+
+
+.resumen {
+
+  display: flex;
+
+  flex-wrap: wrap;
+
+  gap: 12px;
+
+  margin: 16px 0;
+
+}
+
+
+
+.ficha {
+
+  min-width: 140px;
+
+  padding: 14px 18px;
+
+  border: 1px solid var(--borde);
+
+  border-radius: var(--radio-md);
+
+  background: var(--superficie);
+
+  box-shadow: 0 6px 16px -10px rgba(120, 85, 30, 0.18);
+
+  color: var(--suave);
+
+  font-size: 0.85rem;
+
+}
+
+
+
+.ficha b {
+
+  display: block;
+
+  color: var(--texto-fuerte);
+
+  font-size: 1.55rem;
+
+  font-weight: 650;
+
+  line-height: 1.25;
+
+  letter-spacing: -0.02em;
+
+}
+
+
+
+.ficha b.ok {
+
+  color: var(--correcto);
+
+}
+
+
+
+.ficha b.mal {
+
+  color: var(--error);
+
+}
+
+
+
+.resultados-por-grupo {
+
+  display: grid;
+
+  gap: 18px;
+
+}
+
+
+
+.grupo-resultado {
+
+  min-width: 0;
+
+  padding: 18px 20px;
+
+  border: 1px solid var(--borde);
+
+  border-radius: var(--radio-md);
+
+  background: var(--fondo-suave);
+
+}
+
+
+
+.grupo-resultado h3 {
+
+  margin-top: 0;
+
+}
+
+
+
+.grupo-resultado .tabla-scroll {
+
+  background: var(--superficie);
+
+}
+
+
+
+.panel-grafico {
+
+  margin-top: 22px;
+
+}
+
+
+
+.graficos-grupo {
+
+  display: grid;
+
+  gap: 12px;
+
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+
+}
+
+
+
+.grafico-grupo {
+
+  min-width: 0;
+
+  padding: 10px;
+
+  overflow: hidden;
+
+  border: 1px solid var(--borde-claro);
+
+  border-radius: var(--radio-sm);
+
+  background: var(--superficie);
+
+}
+
+
+
+#grafico-rutas svg {
+
+  max-width: 760px;
+
+}
+
+
+
+.grafico-grupo svg,
+
+.panel-grafico svg {
+
+  display: block;
+
+  width: 100%;
+
+  height: auto;
+
+  color: var(--texto);
+
+}
+
+
+
+#grafico-escalabilidad svg {
+
+  color: var(--texto);
+
+}
+
+
+
+.etiqueta-estructura {
+
+  display: inline-block;
+
+  margin: 2px 4px 2px 0;
+
+  padding: 2px 10px;
+
+  background: var(--naranja-tinte);
+
+  border: 1px solid var(--naranja-suave);
+
+  border-radius: 999px;
+
+  color: var(--naranja-texto);
+
+  font-size: 0.8rem;
+
+  font-weight: 600;
+
+}
+
+
+

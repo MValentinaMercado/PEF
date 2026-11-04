@@ -9,13 +9,11 @@ mide con ``tracemalloc`` el pico de memoria de cada consulta y compara el
 **mayor** con un límite. Si lo supera imprime ``Memory Gate FAILED`` y
 termina con código 1, lo que hace fallar el pipeline.
 
-Por qué 32 MiB: en este grafo el pico medido es de unos 15,2 MiB y es el
-mismo en cada corrida, porque ``tracemalloc`` cuenta las asignaciones de
-Python y no depende de la velocidad de la máquina. El límite es el doble de
-lo medido: deja margen para las diferencias de versión de Python en el
-tamaño de los diccionarios, pero detecta una regresión real (por ejemplo,
-copiar las tablas de costos en cada paso). Como la medición es determinista
-no hacen falta repeticiones ni mediana, a diferencia del tiempo.
+El límite de 32 MiB es una política del proyecto, no una afirmación sobre
+el consumo actual de todas las máquinas. El valor medido se informa en cada
+corrida; ``tracemalloc`` permite comparar las asignaciones de Python con un
+criterio estable dentro del mismo entorno. El límite se puede ajustar con
+``--limite-mib``.
 """
 
 import argparse
@@ -52,7 +50,7 @@ def pico_mib(grafo: Grafo, consultas: Sequence[Consulta]) -> float:
 def dentro_del_limite(pico: float, limite: float) -> bool:
     """El gate se cumple si el pico no supera el límite.
 
-    >>> dentro_del_limite(15.2, 32.0)
+    >>> dentro_del_limite(20.0, 32.0)
     True
     >>> dentro_del_limite(32.0, 32.0)
     True

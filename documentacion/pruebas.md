@@ -1,6 +1,6 @@
 # Pruebas y perfilado
 
-Ambos se ven directamente en la aplicación web; no hace falta ejecutar nada aparte.
+Los resultados se muestran en la aplicación web. Abrir una ventana no inicia una suite ni un perfilado: cada experimento se ejecuta desde su botón. Los resultados recuperados de la sesión del navegador se identifican como guardados y conservan su fecha; no se presentan como una ejecución nueva.
 
 ## Pruebas (ventana Pruebas)
 
@@ -14,8 +14,9 @@ La ventana ejecuta `pytest` y muestra el resultado de cada prueba, agrupadas por
 
 - **Costo del modelo de IA**: `tests/test_modelo_costo.py` usa datos sintéticos exactos (el error esperado es cero) y comprueba que cada conclusión sigue sus umbrales y que cada medición se puede pedir sola.
 - **Estado del CI**: `tests/test_ci_github.py` reemplaza la API de GitHub por respuestas fijas (el pipeline no depende de la red) y comprueba el resumen, los errores traducidos, que el token solo se envíe si existe y que solo se entreguen enlaces `https`.
+- **JavaScript de las ventanas**: `tests/js/` prueba con `node --test` (sin dependencias) y un DOM simulado las conclusiones de Análisis, la tolerancia del 5 % para valores casi iguales y el guardado y la restauración de resultados en `sessionStorage` (Editor y Análisis), incluido el descarte de datos inválidos o de un grafo que cambió. `tests/test_javascript.py` lo ejecuta dentro de pytest y se omite si Node.js no está instalado. Desde la terminal: `node --test tests/js/*.test.js`.
 
-Desde la terminal el comando equivalente es `pytest -q`; el endpoint es `POST /api/pruebas/ejecutar`.
+Desde la terminal el comando equivalente es `pytest -q`; el endpoint `POST /api/pruebas/ejecutar` lo invoca bajo demanda. `pytest` es el ejecutor de toda la suite; `unittest` es compatible con pytest y `timeit` se utiliza dentro de las pruebas de rendimiento, no como ejecutor independiente.
 
 ## Perfilado (ventana Análisis)
 

@@ -4,17 +4,17 @@ Aplicación web hecha con **FastAPI** para construir un grafo ponderado, buscar 
 
 ## Contenido
 
-| # | Sección | Qué responde |
-|---|---------|--------------|
-| 1 | [Descripción funcional](funcional.md) | Qué problema resuelve, alcance y requisitos. |
-| 2 | [Arquitectura](arquitectura.md) | Módulos, responsabilidades, dependencias y diagrama de componentes. |
-| 3 | [Instalación y uso](uso.md) | Dependencias, comandos y puertos. |
-| 4 | Diseño técnico: [algoritmos](algoritmos.md), [decisiones](decisiones.md), [optimización](optimizacion.md), [IA en la aplicación](ia.md) e [IA en el desarrollo](desarrollo_con_ia.md) | Estructuras de datos, algoritmos y por qué se implementaron así. |
-| 5 | [API REST](api_rest.md) | Entradas, salidas, errores y ejemplos. |
-| 6 | [Pruebas](pruebas.md) | Estrategia, casos y resultados. |
-| 7 | [Rendimiento](rendimiento.md) | Benchmarks, profiling, complejidad y memoria. |
-| 8 | [Seguridad](seguridad.md) | Riesgos, dependencias vulnerables y medidas correctivas. |
-| 9 | [Mantenimiento](mantenimiento.md) y [calidad](calidad.md) | Cómo contribuir, correr los controles del CI en local y resolver fallos del pipeline. |
+| Sección | Qué responde |
+|---|---|
+| [Descripción funcional](funcional.md) | Qué problema resuelve, alcance y requisitos. |
+| [Arquitectura](arquitectura.md) | Módulos, responsabilidades, dependencias y diagrama de componentes. |
+| [Instalación y uso](uso.md) | Dependencias, comandos y puertos. |
+| Diseño técnico: [algoritmos](algoritmos.md), [decisiones](decisiones.md), [optimización](optimizacion.md), [IA en la aplicación](ia.md) e [IA en el desarrollo](desarrollo_con_ia.md) | Estructuras de datos, algoritmos y por qué se implementaron así. |
+| [API REST](api_rest.md) | Entradas, salidas, errores y ejemplos. |
+| [Pruebas](pruebas.md) | Estrategia, casos y resultados. |
+| [Rendimiento](rendimiento.md) | Benchmarks, profiling, complejidad y memoria. |
+| [Seguridad](seguridad.md) | Riesgos, dependencias vulnerables y medidas correctivas. |
+| [Mantenimiento](mantenimiento.md) y [calidad](calidad.md) | Cómo contribuir, correr los controles del CI en local y resolver fallos del pipeline. |
 
 ## Documentación interna
 

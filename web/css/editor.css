@@ -1,0 +1,818 @@
+/* ==========================================
+   EDITOR
+   ========================================== */
+
+/* ---------- Editor: disposición ---------- */
+
+
+
+.editor-layout {
+
+  display: grid;
+
+  gap: 24px;
+
+  align-items: start;
+
+  grid-template-columns: minmax(0, 1.75fr) minmax(300px, 1fr);
+
+}
+
+
+
+.editor-layout > section {
+
+  margin: 0;
+
+}
+
+
+
+.columna-ruta {
+
+  display: grid;
+
+  gap: 24px;
+
+  min-width: 0;
+
+}
+
+
+
+.columna-ruta > section {
+
+  margin: 0;
+
+}
+
+
+
+.fila-completa {
+
+  grid-column: 1 / -1;
+
+}
+
+
+
+/* ---------- Editor: herramientas ---------- */
+
+
+
+.editor-toolbar {
+
+  display: flex;
+
+  flex-wrap: wrap;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 12px 18px;
+
+  margin: 14px 0 16px;
+
+}
+
+
+
+/* Selector de modo como control segmentado */
+
+.herramientas {
+
+  display: inline-flex;
+
+  flex-wrap: wrap;
+
+  gap: 4px;
+
+  padding: 4px;
+
+  background: var(--fondo);
+
+  border-radius: 18px;
+
+}
+
+
+
+.herramienta {
+
+  position: relative;
+
+  display: block;
+
+  padding: 7px 16px;
+
+  text-align: left;
+
+  border: 1px solid transparent;
+
+  border-radius: 14px;
+
+  cursor: pointer;
+
+  transition:
+
+    background 0.2s var(--ease),
+
+    border-color 0.2s var(--ease),
+
+    box-shadow 0.2s var(--ease);
+
+}
+
+
+
+.herramienta:hover {
+
+  background: rgba(255, 213, 163, 0.3);
+
+}
+
+
+
+.herramienta.activa {
+
+  background: var(--superficie);
+
+  border-color: var(--naranja-2);
+
+  box-shadow: 0 6px 14px -8px rgba(242, 140, 40, 0.6);
+
+}
+
+
+
+.herramienta input {
+
+  position: absolute;
+
+  opacity: 0;
+
+  pointer-events: none;
+
+}
+
+
+
+.herramienta strong {
+
+  display: block;
+
+  color: var(--texto-fuerte);
+
+  font-size: 0.9rem;
+
+  font-weight: 650;
+
+  line-height: 1.3;
+
+}
+
+
+
+.herramienta.activa strong {
+
+  color: var(--naranja-texto);
+
+}
+
+
+
+.herramienta small {
+
+  display: block;
+
+  color: var(--suave);
+
+  font-size: 0.76rem;
+
+  line-height: 1.3;
+
+}
+
+
+
+.herramienta:focus-within {
+
+  box-shadow: var(--anillo);
+
+}
+
+
+
+.acciones-grafo {
+
+  display: flex;
+
+  flex-wrap: wrap;
+
+  align-items: center;
+
+  gap: 8px;
+
+}
+
+
+
+.acciones-grafo .accion {
+
+  min-height: 38px;
+
+  padding: 4px 14px;
+
+  font-size: 0.88rem;
+
+}
+
+
+
+.acciones-grafo .peligro {
+
+  color: var(--error);
+
+}
+
+
+
+.acciones-grafo .peligro:hover:not(:disabled) {
+
+  border-color: rgba(201, 80, 74, 0.5);
+
+  background: rgba(201, 80, 74, 0.07);
+
+}
+
+
+
+.acciones-grafo .secundario {
+
+  border-color: var(--naranja-suave);
+
+  color: var(--naranja-texto);
+
+}
+
+
+
+.acciones-separador {
+
+  width: 1px;
+
+  height: 22px;
+
+  background: var(--borde);
+
+}
+
+
+
+/* ---------- Editor: lienzo del grafo ---------- */
+
+
+
+#lienzo {
+
+  display: block;
+
+  width: 100%;
+
+  height: auto;
+
+  min-height: 300px;
+
+  background:
+
+    radial-gradient(circle at 1px 1px, #e6e1d8 1px, transparent 1.3px) 0 0 /
+
+      24px 24px,
+
+    var(--fondo-suave);
+
+  border: 1px solid var(--borde);
+
+  border-radius: 20px;
+
+  touch-action: none;
+
+}
+
+
+
+#lienzo text {
+
+  user-select: none;
+
+}
+
+
+
+/* Aristas */
+
+#lienzo .arista {
+
+  stroke: var(--arista);
+
+  stroke-width: 2;
+
+  stroke-linecap: round;
+
+  transition:
+
+    stroke 0.25s var(--ease),
+
+    stroke-width 0.25s var(--ease);
+
+}
+
+
+
+#lienzo .arista.marcada {
+
+  stroke: #b8b2a8;
+
+  stroke-width: 4;
+
+}
+
+
+
+#lienzo .arista.bloqueada {
+
+  stroke: var(--error);
+
+  stroke-dasharray: 6 5;
+
+}
+
+
+
+#lienzo .arista.ruta {
+
+  stroke: var(--naranja);
+
+  stroke-width: 6;
+
+  filter: drop-shadow(0 3px 5px rgba(242, 140, 40, 0.35));
+
+}
+
+
+
+#lienzo .arista.ruta.nueva {
+
+  stroke-dasharray: 1;
+
+  stroke-dashoffset: 1;
+
+  animation: trazar 0.7s var(--ease) forwards;
+
+}
+
+
+
+@keyframes trazar {
+
+  to {
+
+    stroke-dashoffset: 0;
+
+  }
+
+}
+
+
+
+/* Peso de cada conexión */
+
+#lienzo .peso-caja {
+
+  fill: #ffffff;
+
+  stroke: var(--borde);
+
+  stroke-width: 1;
+
+}
+
+
+
+#lienzo .peso-caja.bloqueada {
+
+  stroke: rgba(201, 80, 74, 0.55);
+
+}
+
+
+
+#lienzo .peso-caja.ruta {
+
+  fill: var(--naranja-tinte);
+
+  stroke: var(--naranja);
+
+  stroke-width: 1.5;
+
+}
+
+
+
+#lienzo .peso-texto {
+
+  fill: var(--suave);
+
+  font-size: 10px;
+
+  font-weight: 600;
+
+}
+
+
+
+#lienzo .peso-texto.ruta {
+
+  fill: var(--naranja-texto);
+
+}
+
+
+
+/* Nodos */
+
+#lienzo .nodo {
+
+  fill: #ffffff;
+
+  stroke: var(--arista);
+
+  stroke-width: 2.5;
+
+  cursor: pointer;
+
+  transition:
+
+    fill 0.2s var(--ease),
+
+    stroke 0.2s var(--ease),
+
+    filter 0.2s var(--ease);
+
+}
+
+
+
+#lienzo .nodo:hover {
+
+  stroke: var(--naranja-2);
+
+  filter: drop-shadow(0 0 7px rgba(242, 140, 40, 0.5));
+
+}
+
+
+
+#lienzo .nodo.en-ruta {
+
+  fill: var(--naranja-tinte);
+
+  stroke: var(--naranja);
+
+  stroke-width: 3;
+
+}
+
+
+
+#lienzo .nodo.origen {
+
+  fill: var(--naranja);
+
+  stroke: var(--naranja);
+
+}
+
+
+
+#lienzo .nodo.destino {
+
+  fill: var(--texto-fuerte);
+
+  stroke: var(--naranja);
+
+  stroke-width: 3.5;
+
+}
+
+
+
+#lienzo .nodo.seleccionado {
+
+  stroke: var(--naranja);
+
+  stroke-width: 3.5;
+
+  filter: drop-shadow(0 0 9px rgba(242, 140, 40, 0.6));
+
+}
+
+
+
+#lienzo .halo {
+
+  fill: none;
+
+  stroke: var(--naranja);
+
+  stroke-opacity: 0.35;
+
+  stroke-width: 2;
+
+  pointer-events: none;
+
+}
+
+
+
+#lienzo .halo.destino {
+
+  stroke-dasharray: 3 4;
+
+  stroke-opacity: 0.6;
+
+}
+
+
+
+#lienzo .nombre-nodo {
+
+  fill: var(--texto);
+
+  font-size: 12px;
+
+  font-weight: 700;
+
+  pointer-events: none;
+
+}
+
+
+
+#lienzo .nombre-nodo.claro {
+
+  fill: #ffffff;
+
+}
+
+
+
+#lienzo .nombre-nodo.ruta {
+
+  fill: var(--naranja-texto);
+
+}
+
+
+
+#lienzo .rotulo {
+
+  fill: var(--naranja-texto);
+
+  font-size: 10px;
+
+  font-weight: 700;
+
+  pointer-events: none;
+
+}
+
+
+
+/* Leyenda del grafo */
+
+.leyenda {
+
+  display: flex;
+
+  flex-wrap: wrap;
+
+  gap: 8px 20px;
+
+  margin: 16px 0 0;
+
+  padding: 0;
+
+  list-style: none;
+
+}
+
+
+
+.leyenda li {
+
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 8px;
+
+  margin: 0;
+
+}
+
+
+
+.muestra {
+
+  display: inline-block;
+
+  flex: none;
+
+}
+
+
+
+.muestra.linea {
+
+  width: 26px;
+
+  height: 3px;
+
+  border-radius: 3px;
+
+  background: var(--arista);
+
+}
+
+
+
+.muestra.linea.ruta {
+
+  height: 5px;
+
+  background: var(--naranja);
+
+}
+
+
+
+.muestra.linea.bloqueada {
+
+  background: repeating-linear-gradient(
+
+    90deg,
+
+    var(--error) 0 5px,
+
+    transparent 5px 9px
+
+  );
+
+}
+
+
+
+.muestra.punto {
+
+  width: 14px;
+
+  height: 14px;
+
+  border-radius: 50%;
+
+}
+
+
+
+.muestra.punto.origen {
+
+  background: var(--naranja);
+
+  box-shadow: 0 0 0 3px rgba(242, 140, 40, 0.25);
+
+}
+
+
+
+.muestra.punto.destino {
+
+  background: var(--texto-fuerte);
+
+  box-shadow: 0 0 0 2px var(--naranja);
+
+}
+
+
+
+
+/* La disposición en dos columnas pertenece únicamente al editor.*
+
+*   Las demás páginas siguen usando su flujo vertical habitual. */
+
+.editor-layout {
+
+  grid-template-columns: minmax(0, 1.75fr) minmax(320px, 1fr);
+
+  gap: 22px;
+
+}
+
+
+
+.editor-layout > .fila-completa {
+
+  grid-column: 1 / -1;
+
+}
+
+
+
+@media (max-width: 1020px) {
+
+  .editor-layout {
+
+    grid-template-columns: minmax(0, 1fr);
+
+  }
+
+}
+
+
+
+@media (max-width: 700px) {
+
+  header {
+
+    align-items: stretch;
+
+    flex-direction: column;
+
+    gap: 0;
+
+    min-height: 0;
+
+    padding: 0 14px;
+
+  }
+
+
+
+  header h1 {
+
+    flex: none;
+
+    padding: 12px 0 8px;
+
+  }
+
+
+
+  header nav {
+
+    margin: 0 -14px;
+
+    padding: 0 8px;
+
+  }
+
+
+
+  header nav a {
+
+    min-height: 42px;
+
+    padding: 0 0.8rem;
+
+    border-radius: 999px 999px 8px 8px;
+
+  }
+
+}
+
+
+
+/
+/* EDITOR: DOS COLUMNAS EXCLUSIVAMENTE */
+
+.editor-layout {
+
+  display: grid;
+
+  grid-template-columns: minmax(0, 1.75fr) minmax(320px, 1fr);
+
+  gap: 22px;
+
+}
+
+
+
+.editor-layout > .fila-completa {
+
+  grid-column: 1 / -1;
+
+}
+
+
+

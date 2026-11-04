@@ -7,10 +7,10 @@ Todos los algoritmos comparten la misma firma `(grafo, origen, destino)` y devue
 | Algoritmo | Funcionamiento                                                                                                                                  | Complejidad temporal                 | Complejidad espacial |
 |-----------|-------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------|----------------------|
 | BFS       | Menor cantidad de aristas (cola FIFO, `collections.deque`). Un único diccionario de predecesores indica a la vez qué nodos fueron descubiertos. | O(V+E)                               | O(V)                 |
-| Dijkstra  | Menor costo con pesos no negativos (cola de prioridad, `heapq`). Las entradas obsoletas del heap se descartan al extraerlas.                    | O((V+E) log V) con heap binario      | O(V)                 |
-| A\*       | Dijkstra guiado por una heurística euclídea escalada para que sea admisible. El factor de escala se calcula una vez por versión del grafo.      | Depende de la heurística y del grafo | O(V) en el peor caso |
+| Dijkstra  | Menor costo con pesos no negativos (cola de prioridad, `heapq`). Las entradas obsoletas del heap se descartan al extraerlas.                    | O((V+E) log V) con heap binario      | O(V+E)               |
+| A\*       | Dijkstra guiado por una heurística euclídea escalada para que sea admisible. El factor de escala se calcula una vez por versión del grafo.      | Depende de la heurística y del grafo | O(V+E) en el peor caso |
 
-*V* es la cantidad de nodos y *E* la de aristas. Las complejidades corresponden a implementaciones habituales, no a cualquier implementación posible.
+*V* es la cantidad de nodos y *E* la de aristas. Las complejidades corresponden a implementaciones habituales, no a cualquier implementación posible. En Dijkstra y A\* el heap no se actualiza al mejorar un costo: se inserta una entrada nueva y la antigua se descarta al extraerla. Por eso el heap puede acumular hasta O(E) entradas y el espacio es O(V+E), no O(V); el tiempo no cambia porque log E = O(log V).
 
 ## Caché
 

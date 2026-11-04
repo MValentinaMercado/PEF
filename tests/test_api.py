@@ -104,11 +104,6 @@ def test_limpiar_y_ejemplo(cliente):
     assert len(cliente.post("/api/grafo/ejemplo").json()["nodos"]) == 6
 
 
-def test_informacion_de_algoritmos(cliente):
-    filas = cliente.get("/api/informacion").json()
-    assert [f["algoritmo"] for f in filas] == ["BFS", "Dijkstra", "A*"]
-
-
 def test_snakeviz_pide_perfilar_primero(cliente, tmp_path, monkeypatch):
     from api import visor_perfiles
 

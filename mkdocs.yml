@@ -14,20 +14,20 @@ theme:
 
 nav:
   - Inicio: index.md
-  - 1. Descripción funcional: funcional.md
-  - 2. Arquitectura: arquitectura.md
-  - 3. Instalación y uso: uso.md
-  - 4. Diseño técnico:
+  - Descripción funcional: funcional.md
+  - Arquitectura: arquitectura.md
+  - Instalación y uso: uso.md
+  - Diseño técnico:
       - Algoritmos y estructuras: algoritmos.md
       - Decisiones de diseño: decisiones.md
       - Optimización y refactorización: optimizacion.md
       - Componente de IA (costo y utilidad): ia.md
       - IA aplicada al desarrollo: desarrollo_con_ia.md
-  - 5. API y contratos: api_rest.md
-  - 6. Pruebas: pruebas.md
-  - 7. Rendimiento: rendimiento.md
-  - 8. Seguridad: seguridad.md
-  - 9. Mantenimiento:
+  - API y contratos: api_rest.md
+  - Pruebas: pruebas.md
+  - Rendimiento: rendimiento.md
+  - Seguridad: seguridad.md
+  - Mantenimiento:
       - Contribuir y ejecutar los controles: mantenimiento.md
       - Calidad y pipeline de CI: calidad.md
 

@@ -9,13 +9,10 @@ varias veces y compara la **mediana** del tiempo por consulta con un umbral.
 Si la supera imprime ``Performance Gate FAILED`` y termina con código 1, lo
 que hace fallar el pipeline.
 
-Por qué 500 ms: en una PC de desarrollo Dijkstra tarda unos 150 ms por
-consulta en este grafo. Los runners de GitHub Actions suelen ser entre 1,5 y
-2,5 veces más lentos, así que 500 ms deja margen para el ruido sin ocultar
-una regresión real: usar una lista en vez de un conjunto para los nodos
-cerrados lo vuelve cuadrático y lo lleva a varios segundos. Se usa la
-mediana y no el promedio para que una corrida aislada lenta no tumbe el
-pipeline.
+El umbral de 500 ms es una política del proyecto para detectar regresiones
+sin depender de una medición histórica fija. El tiempo varía según el runner;
+por eso se ejecutan varias consultas, se usa la mediana y se informa el valor
+observado en cada corrida. El umbral se puede ajustar con ``--umbral-ms``.
 """
 
 import argparse

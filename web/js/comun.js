@@ -1,6 +1,7 @@
 /* Utilidades compartidas por todas las ventanas. */
 const el = (id) => document.getElementById(id);
-const COLORES = { BFS: "#e8b04a", Dijkstra: "#4cc38a", "A*": "#ef6f6c" };
+// Identidad de cada algoritmo en gráficos: gris cálido, naranja y naranja oscuro.
+const COLORES = { BFS: "#9a948c", Dijkstra: "#f28c28", "A*": "#b8501a" };
 
 /** Llama a la API y devuelve el JSON; lanza Error con el detalle. */
 async function api(metodo, url, cuerpo) {
@@ -20,6 +21,90 @@ async function api(metodo, url, cuerpo) {
     );
   }
   return datos;
+}
+
+/** Conserva resultados de experimentos en esta pestaña sin volver a ejecutarlos. */
+function guardarResultado(clave, datos) {
+  try {
+    sessionStorage.setItem(
+      `resultado:${clave}`,
+      JSON.stringify({ datos, guardado: new Date().toISOString() }),
+    );
+  } catch (_) {
+    // La interfaz sigue funcionando aunque el navegador bloquee el almacenamiento.
+  }
+}
+
+/** Recupera una medición anterior y su fecha; nunca la presenta como actual. */
+function leerResultado(clave) {
+  try {
+    const texto = sessionStorage.getItem(`resultado:${clave}`);
+    return texto ? JSON.parse(texto) : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function etiquetaResultadoGuardado(resultado) {
+  if (!resultado?.guardado) return "";
+  const fecha = new Date(resultado.guardado);
+  return Number.isNaN(fecha.getTime())
+    ? "Resultado guardado en esta pestaña."
+    : `Último resultado de esta pestaña: ${fecha.toLocaleString("es-AR")}.`;
+}
+
+/** Diferencia relativa máxima para considerar dos valores prácticamente iguales. */
+const TOLERANCIA_IGUALES = 0.05;
+
+/** Indica si dos magnitudes difieren menos que la tolerancia común. */
+function casiIguales(a, b, tolerancia = TOLERANCIA_IGUALES) {
+  const mayor = Math.max(Math.abs(a), Math.abs(b));
+  return mayor === 0 || Math.abs(a - b) / mayor <= tolerancia;
+}
+
+/** "1 caso" / "3 casos". */
+const pluralizar = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
+
+/** Parte sobre el total como porcentaje entero: "40 %". */
+const porcentajeDe = (parte, total) => `${fmt((parte / total) * 100, 0)} %`;
+
+/** Recuento por clave, de mayor a menor: [[clave, cantidad], ...]. */
+function contarPor(filas, clave, peso = () => 1) {
+  const cuenta = new Map();
+  for (const f of filas) cuenta.set(clave(f), (cuenta.get(clave(f)) || 0) + peso(f));
+  return [...cuenta].sort((a, b) => b[1] - a[1]);
+}
+
+/** Mediana de una lista de números (lista no vacía). */
+function mediana(valores) {
+  const orden = [...valores].sort((a, b) => a - b);
+  const medio = Math.floor(orden.length / 2);
+  return orden.length % 2 ? orden[medio] : (orden[medio - 1] + orden[medio]) / 2;
+}
+
+/** "A", "A y B", "A, B y C". */
+function listar(nombres) {
+  if (nombres.length < 2) return nombres.join("");
+  return `${nombres.slice(0, -1).join(", ")} y ${nombres[nombres.length - 1]}`;
+}
+
+/** Filas con el menor valor (o casi igual a él, con la tolerancia común). */
+function conMenor(filas, valor, tolerante = true) {
+  const minimo = Math.min(...filas.map(valor));
+  const cerca = (f) =>
+    tolerante ? casiIguales(valor(f), minimo) : valor(f) === minimo;
+  return { minimo, filas: filas.filter(cerca) };
+}
+
+/** Compara una magnitud entre filas: similar en todas, o cuáles usan menos. */
+function compararMagnitud(filas, valor, nombre, formato, nombreDe = (f) => f.algoritmo) {
+  const { minimo, filas: menores } = conMenor(filas, valor);
+  const maximo = Math.max(...filas.map(valor));
+  if (menores.length === filas.length) {
+    return `${nombre}: similar en todos (${formato(maximo)} como máximo).`;
+  }
+  const nombres = menores.map(nombreDe);
+  return `${nombre}: ${listar(nombres)} ${nombres.length > 1 ? "registran" : "registra"} menos (${formato(minimo)} frente a ${formato(maximo)}).`;
 }
 
 /** Escapa texto para insertarlo en HTML. */

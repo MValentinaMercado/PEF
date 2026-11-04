@@ -18,13 +18,6 @@ campos_de_filas.aceleracion
 campos_de_filas.tamano_lote_paralelo
 campos_de_filas.resultados_coinciden
 
-# rutas/informacion.py: ficha descriptiva de cada algoritmo
-campos_de_filas.funcionamiento
-campos_de_filas.complejidad_temporal
-campos_de_filas.complejidad_espacial
-campos_de_filas.estructuras
-campos_de_filas.uso_estructuras
-
 # rutas/perfilado.py: filas de tiempo y de memoria
 campos_de_filas.tiempo_acumulado
 campos_de_filas.memoria_mib

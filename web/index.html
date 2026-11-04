@@ -18,8 +18,8 @@
         <a href="/documentacion">Documentación</a>
       </nav>
     </header>
-    <main>
-      <section>
+    <main class="editor-layout">
+      <section class="tarjeta-grafo">
         <h2 data-api="GET /api/grafo|POST /api/grafo/ejemplo">
           Construí el grafo
         </h2>
@@ -69,38 +69,58 @@
           role="img"
           aria-label="Grafo editable"
         ></svg>
-        <p class="leyenda">
-          Verde = origen · Ámbar = destino · Rojo punteado = conexión bloqueada.
-        </p>
+        <ul class="leyenda" aria-label="Leyenda del grafo">
+          <li><span class="muestra linea"></span>Conexión posible</li>
+          <li><span class="muestra linea ruta"></span>Ruta encontrada</li>
+          <li><span class="muestra punto origen"></span>Origen</li>
+          <li><span class="muestra punto destino"></span>Destino</li>
+          <li><span class="muestra linea bloqueada"></span>Conexión bloqueada</li>
+        </ul>
         <p id="mensaje" class="estado" aria-live="polite"></p>
       </section>
 
-      <section>
-        <h2 data-api="POST /api/rutas" data-body='{"origen":"A","destino":"F"}'>
-          Encontrá la mejor ruta
-        </h2>
-        <div class="barra">
-          <label
-            >Origen
-            <select id="origen"></select
-          ></label>
-          <label
-            >Destino
-            <select id="destino"></select
-          ></label>
-          <label
-            ><input type="checkbox" class="alg" value="BFS" checked />
-            BFS</label
-          >
-          <label
-            ><input type="checkbox" class="alg" value="Dijkstra" checked />
-            Dijkstra</label
-          >
-          <label
-            ><input type="checkbox" class="alg" value="A*" checked /> A*</label
-          >
-          <button id="btn-ejecutar" class="principal">Ejecutar</button>
-        </div>
+      <div class="columna-ruta">
+        <section class="tarjeta-buscar">
+          <h2 data-api="POST /api/rutas" data-body='{"origen":"A","destino":"F"}'>
+            Buscá una ruta
+          </h2>
+          <div class="barra">
+            <label
+              >Origen
+              <select id="origen"></select
+            ></label>
+            <label
+              >Destino
+              <select id="destino"></select
+            ></label>
+            <label
+              ><input type="checkbox" class="alg" value="BFS" checked />
+              BFS</label
+            >
+            <label
+              ><input type="checkbox" class="alg" value="Dijkstra" checked />
+              Dijkstra</label
+            >
+            <label
+              ><input type="checkbox" class="alg" value="A*" checked /> A*</label
+            >
+            <button id="btn-ejecutar" class="principal">Ejecutar</button>
+          </div>
+        </section>
+
+        <section class="tarjeta-ruta" aria-labelledby="titulo-ruta">
+          <h2 id="titulo-ruta">Ruta encontrada</h2>
+          <div id="detalle-ruta" aria-live="polite"></div>
+        </section>
+      </div>
+
+      <section class="fila-completa">
+        <h2>Comparación de algoritmos</h2>
+        <p class="nota">
+          Tiempo: promedio de 50 repeticiones. Memoria: pico de una ejecución
+          aparte.
+        </p>
+        <p id="estado-resultados" class="estado" aria-live="polite"></p>
         <div class="tabla-scroll">
           <table id="tabla-resultados">
             <thead>
@@ -116,6 +136,7 @@
             <tbody></tbody>
           </table>
         </div>
+        <p class="conclusion" id="analisis-rutas"></p>
 
         <div class="panel-grafico">
           <h3
@@ -130,8 +151,8 @@
         </div>
       </section>
 
-      <section>
-        <h2 data-api="GET /api/informacion">Referencia de algoritmos</h2>
+      <section class="fila-completa">
+        <h2>Referencia de algoritmos</h2>
         <div class="tabla-scroll">
           <table id="tabla-info">
             <thead>
@@ -143,10 +164,38 @@
                 <th>Complejidad espacial</th>
               </tr>
             </thead>
-            <tbody></tbody>
+            <tbody>
+              <tr>
+                <td>BFS</td>
+                <td>
+                  <span class="etiqueta-estructura">dict de adyacencia</span> <span class="etiqueta-estructura">deque</span> <span class="etiqueta-estructura">dict de predecesores</span><br /><small>deque permite extraer el primero en O(1); los diccionarios registran visitados y predecesores.</small>
+                </td>
+                <td>Busca la ruta con menos conexiones, sin considerar los pesos.</td>
+                <td>O(V+E)</td>
+                <td>O(V)</td>
+              </tr>
+              <tr>
+                <td>Dijkstra</td>
+                <td>
+                  <span class="etiqueta-estructura">dict de adyacencia</span> <span class="etiqueta-estructura">heapq</span> <span class="etiqueta-estructura">dict de distancias</span> <span class="etiqueta-estructura">set</span> <span class="etiqueta-estructura">dict de predecesores</span><br /><small>heapq extrae la menor prioridad en O(log V); dict ofrece acceso promedio O(1) y set evita procesar nodos cerrados.</small>
+                </td>
+                <td>Encuentra la ruta de menor costo con pesos no negativos.</td>
+                <td>O((V+E) log V), con listas de adyacencia y un heap binario.</td>
+                <td>O(V+E)</td>
+              </tr>
+              <tr>
+                <td>A*</td>
+                <td>
+                  <span class="etiqueta-estructura">dict de adyacencia</span> <span class="etiqueta-estructura">heapq</span> <span class="etiqueta-estructura">dict de costos</span> <span class="etiqueta-estructura">set</span> <span class="etiqueta-estructura">dict de predecesores</span><br /><small>heapq prioriza g(n)+h(n); dict conserva el mejor costo y los predecesores, y set registra nodos cerrados.</small>
+                </td>
+                <td>Como Dijkstra, pero prioriza por g(n)+h(n). La heurística h es la distancia dibujada entre nodos, escalada para que nunca sobreestime el costo real.</td>
+                <td>Depende de la heurística y del grafo.</td>
+                <td>O(V+E) en el peor caso</td>
+              </tr>
+            </tbody>
           </table>
         </div>
-        <p class="nota">V = cantidad de nodos, E = cantidad de aristas.</p>
+        <p class="nota">V = cantidad de nodos, E = cantidad de aristas. En Dijkstra y A* el heap guarda una entrada por cada mejora de costo y descarta las obsoletas al extraerlas, por eso puede llegar a O(E) entradas.</p>
       </section>
     </main>
     <dialog id="dialogo">

@@ -11,7 +11,8 @@ def a_estrella(grafo: Grafo, origen: str, destino: str) -> ResultadoBusqueda:
     """Busca una ruta guiada por f(n)=g(n)+h(n).
 
     La complejidad depende de la heurística y del grafo; en el peor caso
-    puede explorar gran parte de la red. El bucle está en
+    puede explorar gran parte de la red, con espacio O(V+E) por el heap con
+    entradas obsoletas. El bucle está en
     :func:`~rutas.algoritmos.comunes.buscar_con_heap`, compartido con
     Dijkstra: aquí solo se define h(n).
     """
