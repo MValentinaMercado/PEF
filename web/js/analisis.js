@@ -2,20 +2,29 @@
 const MIL = (n) => Number(n).toLocaleString("es-AR");
 
 /**
+ * BFS no maneja pesos: no compite con Dijkstra y A*. Se muestra para conocer
+ * el costo base de recorrer el grafo sin manejar pesos y las conclusiones
+ * comparan solo a los algoritmos que sí los consideran.
+ */
+const SIN_PESOS = "BFS";
+const USO_BFS =
+  "sirve para conocer el costo base de recorrer el grafo sin manejar pesos";
+const conPesos = (filas) => filas.filter((f) => f.algoritmo !== SIN_PESOS);
+/** Filas con pesos; si no hay ninguna, todas (para no dejar un resumen vacío). */
+const comparables = (filas) =>
+  conPesos(filas).length ? conPesos(filas) : filas;
+
+/**
  * Devuelve el menor valor de una lista de resultados.
  * Ignora valores nulos, indefinidos y no numéricos.
  */
 function mejorResultado(filas, campo) {
-  const validas = filas.filter(
-    (f) => Number.isFinite(Number(f[campo])),
-  );
+  const validas = filas.filter((f) => Number.isFinite(Number(f[campo])));
 
   if (!validas.length) return null;
 
   return validas.reduce((mejor, actual) =>
-    Number(actual[campo]) < Number(mejor[campo])
-      ? actual
-      : mejor,
+    Number(actual[campo]) < Number(mejor[campo]) ? actual : mejor,
   );
 }
 
@@ -23,16 +32,12 @@ function mejorResultado(filas, campo) {
  * Devuelve el mayor valor de una lista de resultados.
  */
 function mayorResultado(filas, campo) {
-  const validas = filas.filter(
-    (f) => Number.isFinite(Number(f[campo])),
-  );
+  const validas = filas.filter((f) => Number.isFinite(Number(f[campo])));
 
   if (!validas.length) return null;
 
   return validas.reduce((mejor, actual) =>
-    Number(actual[campo]) > Number(mejor[campo])
-      ? actual
-      : mejor,
+    Number(actual[campo]) > Number(mejor[campo]) ? actual : mejor,
   );
 }
 
@@ -94,20 +99,42 @@ const SIN_DATOS = "No hay datos suficientes para interpretar esta tabla.";
 
 /** Compara tiempo, nodos explorados y memoria de un grupo de algoritmos. */
 function analizarGrupo(filas) {
-  if (filas.length < 2) return "Con un solo algoritmo no hay comparación posible.";
-  const frases = [
-    compararMagnitud(filas, (f) => f.tiempo_ms, "Tiempo", enMs),
-    compararMagnitud(filas, (f) => f.nodos_explorados, "Nodos explorados", (n) => MIL(Math.round(n))),
-    compararMagnitud(filas, (f) => f.memoria_kb, "Memoria pico", enKb),
-  ];
+  if (filas.length < 2)
+    return "Con un solo algoritmo no hay comparación posible.";
+  const ponderados = conPesos(filas);
+  const base = filas.find((f) => f.algoritmo === SIN_PESOS);
+  const frases = [];
+  if (ponderados.length > 1) {
+    frases.push(
+      compararMagnitud(ponderados, (f) => f.tiempo_ms, "Tiempo", enMs),
+      compararMagnitud(
+        ponderados,
+        (f) => f.nodos_explorados,
+        "Nodos explorados",
+        (n) => MIL(Math.round(n)),
+      ),
+      compararMagnitud(ponderados, (f) => f.memoria_kb, "Memoria pico", enKb),
+    );
+  }
   const a = filas.find((f) => f.algoritmo === "A*");
   const d = filas.find((f) => f.algoritmo === "Dijkstra");
-  if (a && d && a.nodos_explorados < d.nodos_explorados && !casiIguales(a.nodos_explorados, d.nodos_explorados)) {
-    const masRapido = a.tiempo_ms < d.tiempo_ms && !casiIguales(a.tiempo_ms, d.tiempo_ms);
+  if (
+    a &&
+    d &&
+    a.nodos_explorados < d.nodos_explorados &&
+    !casiIguales(a.nodos_explorados, d.nodos_explorados)
+  ) {
+    const masRapido =
+      a.tiempo_ms < d.tiempo_ms && !casiIguales(a.tiempo_ms, d.tiempo_ms);
     frases.push(
       masRapido
         ? "A* exploró menos nodos que Dijkstra y eso se tradujo en menor tiempo."
         : "A* exploró menos nodos que Dijkstra, pero no tardó menos: evaluar la heurística en cada nodo también cuesta.",
+    );
+  }
+  if (base) {
+    frases.push(
+      `BFS ${USO_BFS}: tardó ${enMs(base.tiempo_ms)}, exploró ${MIL(Math.round(base.nodos_explorados))} nodos y usó ${enKb(base.memoria_kb)} de memoria pico.`,
     );
   }
   return frases.join(" ");
@@ -117,7 +144,8 @@ function analizarGrupo(filas) {
 function analizarBenchmark(filas, grupos) {
   if (!grupos.length) return "";
   const lecturas = grupos.map((n) => {
-    const grupo = filas.filter((f) => f.nodos === n);
+    const grupo = conPesos(filas.filter((f) => f.nodos === n));
+    if (grupo.length < 2) return "sin comparación posible";
     const rapidos = conMenor(grupo, (f) => f.tiempo_ms).filas;
     return rapidos.length === grupo.length
       ? "tiempos similares"
@@ -126,17 +154,34 @@ function analizarBenchmark(filas, grupos) {
   const iguales = lecturas.every((l) => l === lecturas[0]);
   const frases = [
     iguales
-      ? `En los ${grupos.length} tamaños medidos: ${lecturas[0]}.`
-      : `${grupos.map((n, i) => `${MIL(n)} nodos: ${lecturas[i]}`).join("; ")}. El orden en tiempo cambia con el tamaño.`,
+      ? `Entre Dijkstra y A*, en los ${grupos.length} tamaños medidos: ${lecturas[0]}.`
+      : `Entre Dijkstra y A*, ${grupos.map((n, i) => `${MIL(n)} nodos: ${lecturas[i]}`).join("; ")}. El orden en tiempo cambia con el tamaño.`,
   ];
-  const primero = grupos[0], ultimo = grupos[grupos.length - 1];
-  const factores = Object.keys(COLORES).flatMap((algoritmo) => {
-    const x = filas.find((f) => f.algoritmo === algoritmo && f.nodos === primero);
-    const y = filas.find((f) => f.algoritmo === algoritmo && f.nodos === ultimo);
-    return x && y && x.tiempo_ms > 0 ? [`${algoritmo} ×${fmt(y.tiempo_ms / x.tiempo_ms, 1)}`] : [];
-  });
+  const primero = grupos[0],
+    ultimo = grupos[grupos.length - 1];
+  const factor = (algoritmo) => {
+    const x = filas.find(
+      (f) => f.algoritmo === algoritmo && f.nodos === primero,
+    );
+    const y = filas.find(
+      (f) => f.algoritmo === algoritmo && f.nodos === ultimo,
+    );
+    return x && y && x.tiempo_ms > 0
+      ? `×${fmt(y.tiempo_ms / x.tiempo_ms, 1)}`
+      : null;
+  };
+  const factores = Object.keys(COLORES)
+    .filter((algoritmo) => algoritmo !== SIN_PESOS && factor(algoritmo))
+    .map((algoritmo) => `${algoritmo} ${factor(algoritmo)}`);
   if (grupos.length > 1 && factores.length) {
-    frases.push(`Al pasar de ${MIL(primero)} a ${MIL(ultimo)} nodos (×${fmt(ultimo / primero, 0)}) el tiempo se multiplicó por: ${factores.join(", ")}.`);
+    frases.push(
+      `Al pasar de ${MIL(primero)} a ${MIL(ultimo)} nodos (×${fmt(ultimo / primero, 0)}) el tiempo se multiplicó por: ${factores.join(", ")}.`,
+    );
+  }
+  if (grupos.length > 1 && factor(SIN_PESOS)) {
+    frases.push(
+      `BFS ${USO_BFS}: su tiempo se multiplicó por ${factor(SIN_PESOS).slice(1)} en ese mismo cambio de tamaño.`,
+    );
   }
   return frases.join(" ");
 }
@@ -146,25 +191,36 @@ function analizarEscalabilidad(filas) {
   const frases = [];
   const crecimientoMemoria = [];
   for (const algoritmo of Object.keys(COLORES)) {
-    const propias = filas.filter((f) => f.algoritmo === algoritmo).sort((a, b) => a.nodos - b.nodos);
+    const propias = filas
+      .filter((f) => f.algoritmo === algoritmo)
+      .sort((a, b) => a.nodos - b.nodos);
     if (propias.length < 2) continue;
-    const primera = propias[0], ultima = propias[propias.length - 1];
+    const primera = propias[0],
+      ultima = propias[propias.length - 1];
     const razon = ultima.razon;
     const lectura = casiIguales(razon, 1)
       ? "sigue la curva teórica"
-      : razon > 1 ? "crece más rápido que la curva teórica" : "crece más lento que la curva teórica";
+      : razon > 1
+        ? "crece más rápido que la curva teórica"
+        : "crece más lento que la curva teórica";
     let motivo = "";
     if (!casiIguales(razon, 1)) {
       motivo = casiIguales(ultima.razon_explorados, 1)
         ? ", pero su tiempo es proporcional a los nodos explorados: la diferencia viene de cuántos nodos recorre la búsqueda"
         : ", y tampoco coincide al ajustar por nodos explorados: cambió el costo por nodo";
     }
-    frases.push(`${algoritmo} ${lectura} (a ${MIL(ultima.nodos)} nodos, observado/teórico ${fmt(razon, 2)})${motivo}.`);
-    crecimientoMemoria.push(`${algoritmo} ×${fmt(ultima.memoria_kb / primera.memoria_kb, 1)}`);
+    frases.push(
+      `${algoritmo} ${lectura} (a ${MIL(ultima.nodos)} nodos, observado/teórico ${fmt(razon, 2)})${motivo}.`,
+    );
+    crecimientoMemoria.push(
+      `${algoritmo} ×${fmt(ultima.memoria_kb / primera.memoria_kb, 1)}`,
+    );
   }
   if (!frases.length) return SIN_DATOS;
   const nodos = filas.map((f) => f.nodos);
-  frases.push(`La memoria pico se multiplicó por: ${crecimientoMemoria.join(", ")}, mientras los nodos crecieron ×${fmt(Math.max(...nodos) / Math.min(...nodos), 0)}.`);
+  frases.push(
+    `La memoria pico se multiplicó por: ${crecimientoMemoria.join(", ")}, mientras los nodos crecieron ×${fmt(Math.max(...nodos) / Math.min(...nodos), 0)}.`,
+  );
   return frases.join(" ");
 }
 
@@ -172,7 +228,8 @@ function analizarEscalabilidad(filas) {
 function analizarGrafos(grafos) {
   if (grafos.length < 2) return SIN_DATOS;
   const orden = [...grafos].sort((a, b) => a.nodos - b.nodos);
-  const primero = orden[0], ultimo = orden[orden.length - 1];
+  const primero = orden[0],
+    ultimo = orden[orden.length - 1];
   const bytes = (g) => (g.memoria_mb * 1024 * 1024) / g.nodos;
   const factorNodos = ultimo.nodos / primero.nodos;
   const factorTiempo = ultimo.segundos / primero.segundos;
@@ -192,24 +249,32 @@ function crecimiento(filas, desde = 10000, hasta = 100000) {
     const a = filas.find((f) => f.algoritmo === algoritmo && f.nodos === desde);
     const b = filas.find((f) => f.algoritmo === algoritmo && f.nodos === hasta);
     if (!a || !b) return [];
-    return [{
-      algoritmo, desde, hasta,
-      tiempo: b.tiempo_ms / a.tiempo_ms,
-      explorados: b.nodos_explorados / a.nodos_explorados,
-      costo: b.us_por_nodo / a.us_por_nodo,
-      esperado: algoritmo === "BFS" ? 1 : factorLog,
-    }];
+    return [
+      {
+        algoritmo,
+        desde,
+        hasta,
+        tiempo: b.tiempo_ms / a.tiempo_ms,
+        explorados: b.nodos_explorados / a.nodos_explorados,
+        costo: b.us_por_nodo / a.us_por_nodo,
+        esperado: algoritmo === "BFS" ? 1 : factorLog,
+      },
+    ];
   });
 }
 
 /** Separa el crecimiento del tiempo y lo contrasta con el factor esperado. */
 function analizarCrecimiento(datos) {
-  if (!datos.length) return "Faltan las mediciones de 10.000 y 100.000 nodos para analizar el crecimiento.";
+  if (!datos.length)
+    return "Faltan las mediciones de 10.000 y 100.000 nodos para analizar el crecimiento.";
   const frases = datos.map((d) => {
     const base = `${d.algoritmo}: el tiempo se multiplicó por ${fmt(d.tiempo, 2)} (×${fmt(d.explorados, 2)} por nodos explorados y ×${fmt(d.costo, 2)} por costo por nodo)`;
     let lectura;
     if (casiIguales(d.costo, d.esperado)) {
-      lectura = d.algoritmo === "BFS" ? "el costo por nodo se mantuvo, como predice O(V+E)" : "el costo por nodo crece como predice el factor log V";
+      lectura =
+        d.algoritmo === "BFS"
+          ? "el costo por nodo se mantuvo, como predice O(V+E)"
+          : "el costo por nodo crece como predice el factor log V";
     } else if (d.costo > d.esperado) {
       lectura = `el costo por nodo creció más de lo esperado (×${fmt(d.esperado, 2)}); puede deberse a efectos de caché de CPU y memoria`;
     } else {
@@ -223,14 +288,19 @@ function analizarCrecimiento(datos) {
 /** Interpreta el experimento de caché frente a lo máximo posible. */
 function analizarCache(r) {
   const maximo = r.total_consultas - r.pares_distintos;
-  const tasa = r.total_consultas > 0 ? (100 * r.aciertos) / r.total_consultas : 0;
-  const aprovechamiento = r.aciertos >= maximo
-    ? "es el máximo posible, porque solo la primera consulta de cada par distinto debe calcularse"
-    : `el máximo posible con ${r.pares_distintos} pares distintos era ${maximo}`;
-  const [tSin, mSin] = r.sin_cache, [tCon, mCon] = r.con_cache;
+  const tasa =
+    r.total_consultas > 0 ? (100 * r.aciertos) / r.total_consultas : 0;
+  const aprovechamiento =
+    r.aciertos >= maximo
+      ? "es el máximo posible, porque solo la primera consulta de cada par distinto debe calcularse"
+      : `el máximo posible con ${r.pares_distintos} pares distintos era ${maximo}`;
+  const [tSin, mSin] = r.sin_cache,
+    [tCon, mCon] = r.con_cache;
   const tiempo = casiIguales(tSin, tCon)
     ? "La caché no cambió el tiempo de forma apreciable."
-    : tCon < tSin ? `Con caché el tiempo fue ${fmt(tSin / tCon, 1)} veces menor.` : "Con caché el tiempo fue mayor.";
+    : tCon < tSin
+      ? `Con caché el tiempo fue ${fmt(tSin / tCon, 1)} veces menor.`
+      : "Con caché el tiempo fue mayor.";
   const memoria = casiIguales(mSin, mCon)
     ? "La memoria pico fue similar."
     : `La caché ${mCon > mSin ? "agregó" : "ahorró"} ${enKb(Math.abs(mCon - mSin))} de memoria pico.`;
@@ -247,12 +317,15 @@ function analizarCache(r) {
 
 /** Frases de cada modo frente a uno de referencia, según su aceleración. */
 function compararConBase(filas, base) {
-  return filas.filter((f) => f !== base).map((f) => {
-    if (casiIguales(f.aceleracion, 1)) return `${f.modo} tardó prácticamente lo mismo que ${base.modo}.`;
-    return f.aceleracion > 1
-      ? `${f.modo} fue ${veces(f.aceleracion)} más rápido que ${base.modo}.`
-      : `${f.modo} fue ${veces(1 / f.aceleracion)} más lento que ${base.modo}.`;
-  });
+  return filas
+    .filter((f) => f !== base)
+    .map((f) => {
+      if (casiIguales(f.aceleracion, 1))
+        return `${f.modo} tardó prácticamente lo mismo que ${base.modo}.`;
+      return f.aceleracion > 1
+        ? `${f.modo} fue ${veces(f.aceleracion)} más rápido que ${base.modo}.`
+        : `${f.modo} fue ${veces(1 / f.aceleracion)} más lento que ${base.modo}.`;
+    });
 }
 
 /** Contrasta hilos y procesos sin suponer cuál acelera. */
@@ -261,9 +334,12 @@ function lecturaParalelismo(filas) {
   const hilos = filas.find((f) => f.modo.startsWith("Hilos"));
   const procesos = filas.find((f) => f.modo.startsWith("Procesos"));
   if (!hilos || !procesos) return "";
-  if (!clara(hilos) && clara(procesos)) return "Los procesos aceleraron y los hilos no, lo esperable en trabajo de CPU con GIL.";
-  if (!clara(hilos) && !clara(procesos)) return "Ni hilos ni procesos aceleraron: en esta carga el costo de coordinarlos supera la ganancia.";
-  if (clara(hilos) && !clara(procesos)) return "Los hilos aceleraron y los procesos no: el costo de crear procesos y transferir datos pesó más que la ganancia.";
+  if (!clara(hilos) && clara(procesos))
+    return "Los procesos aceleraron y los hilos no, lo esperable en trabajo de CPU con GIL.";
+  if (!clara(hilos) && !clara(procesos))
+    return "Ni hilos ni procesos aceleraron: en esta carga el costo de coordinarlos supera la ganancia.";
+  if (clara(hilos) && !clara(procesos))
+    return "Los hilos aceleraron y los procesos no: el costo de crear procesos y transferir datos pesó más que la ganancia.";
   return "Tanto hilos como procesos aceleraron en esta ejecución.";
 }
 
@@ -273,8 +349,16 @@ function analizarConcurrencia(filas) {
   return [
     ...compararConBase(filas, base),
     lecturaParalelismo(filas),
-    compararMagnitud(filas, (f) => f.memoria_kb, "Memoria pico", enKb, nombreModo),
-  ].filter(Boolean).join(" ");
+    compararMagnitud(
+      filas,
+      (f) => f.memoria_kb,
+      "Memoria pico",
+      enKb,
+      nombreModo,
+    ),
+  ]
+    .filter(Boolean)
+    .join(" ");
 }
 
 /** Escritura o lectura: cada modo frente al primero, más la memoria. */
@@ -283,8 +367,16 @@ function analizarModosArchivo(filas, inicio = "") {
   return [
     inicio,
     ...compararConBase(filas, filas[0]),
-    compararMagnitud(filas, (f) => f.memoria_kb, "Memoria pico", enKb, nombreModo),
-  ].filter(Boolean).join(" ");
+    compararMagnitud(
+      filas,
+      (f) => f.memoria_kb,
+      "Memoria pico",
+      enKb,
+      nombreModo,
+    ),
+  ]
+    .filter(Boolean)
+    .join(" ");
 }
 
 function analizarParalelo(r) {
@@ -293,15 +385,26 @@ function analizarParalelo(r) {
   const coincide = r.resultados_coinciden
     ? "Todos los modos produjeron el mismo resultado."
     : "Atención: los resultados de los modos no coinciden.";
-  return [...compararConBase(r.paralelo, base), lecturaParalelismo(r.paralelo), coincide].filter(Boolean).join(" ");
+  return [
+    ...compararConBase(r.paralelo, base),
+    lecturaParalelismo(r.paralelo),
+    coincide,
+  ]
+    .filter(Boolean)
+    .join(" ");
 }
 
 /** Dónde se concentra el tiempo propio de un algoritmo (cProfile). */
 function analizarFunciones(funciones) {
   const total = funciones.reduce((suma, f) => suma + f.tiempo_propio, 0);
-  if (!funciones.length || total <= 0) return "No se registró tiempo para analizar.";
-  const orden = [...funciones].sort((a, b) => b.tiempo_propio - a.tiempo_propio);
-  const cima = orden.filter((f) => casiIguales(f.tiempo_propio, orden[0].tiempo_propio));
+  if (!funciones.length || total <= 0)
+    return "No se registró tiempo para analizar.";
+  const orden = [...funciones].sort(
+    (a, b) => b.tiempo_propio - a.tiempo_propio,
+  );
+  const cima = orden.filter((f) =>
+    casiIguales(f.tiempo_propio, orden[0].tiempo_propio),
+  );
   const frases = [
     cima.length > 1
       ? `${listar(cima.map((f) => f.funcion))} concentran un tiempo propio similar (${porcentajeDe(orden[0].tiempo_propio, total)} del total cada una).`
@@ -309,7 +412,9 @@ function analizarFunciones(funciones) {
   ];
   const frecuente = mayorResultado(funciones, "llamadas");
   if (frecuente && !cima.includes(frecuente)) {
-    frases.push(`La más llamada es ${frecuente.funcion} (${MIL(frecuente.llamadas)} veces) y solo aporta ${porcentajeDe(frecuente.tiempo_propio, total)}: llamar mucho no implica costar mucho.`);
+    frases.push(
+      `La más llamada es ${frecuente.funcion} (${MIL(frecuente.llamadas)} veces) y solo aporta ${porcentajeDe(frecuente.tiempo_propio, total)}: llamar mucho no implica costar mucho.`,
+    );
   }
   return frases.join(" ");
 }
@@ -318,7 +423,8 @@ function analizarMemoria(filas) {
   if (!filas.length) return "memory_profiler no devolvió líneas para analizar.";
   const mayor = mayorResultado(filas, "incremento_mib");
   const maxima = Math.max(...filas.map((f) => f.memoria_mib));
-  const aviso = "memory_profiler mide el proceso completo, por eso la memoria total incluye lo que ya estaba cargado.";
+  const aviso =
+    "memory_profiler mide el proceso completo, por eso la memoria total incluye lo que ya estaba cargado.";
   if (!mayor || mayor.incremento_mib < 0.05) {
     return `Ninguna línea muestra un incremento visible a un decimal (el máximo total es ${fmt(maxima, 1)} MiB). ${aviso}`;
   }
@@ -338,52 +444,90 @@ function analizarScalene(r) {
   const total = (f) => f.cpu_python + f.cpu_nativo + f.sistema;
   const cima = r.filas.reduce((m, f) => (total(f) > total(m) ? f : m));
   const suma = (campo) => r.filas.reduce((s, f) => s + f[campo], 0);
-  const partes = [["Python", suma("cpu_python")], ["nativo", suma("cpu_nativo")], ["sistema", suma("sistema")]];
+  const partes = [
+    ["Python", suma("cpu_python")],
+    ["nativo", suma("cpu_nativo")],
+    ["sistema", suma("sistema")],
+  ];
   const mayor = partes.reduce((m, p) => (p[1] > m[1] ? p : m));
-  const memoria = r.fraccion_python >= 0.5
-    ? "La mayor parte de la memoria pico corresponde a objetos de Python."
-    : "La mayor parte de la memoria pico no es de Python (es memoria nativa).";
+  const memoria =
+    r.fraccion_python >= 0.5
+      ? "La mayor parte de la memoria pico corresponde a objetos de Python."
+      : "La mayor parte de la memoria pico no es de Python (es memoria nativa).";
   return `La línea más costosa es ${cima.archivo}:${cima.linea} (${pct(total(cima))} del tiempo). Entre las líneas mostradas predomina el CPU ${mayor[0]} (${partes.map(([n, v]) => `${n} ${pct(v)}`).join(", ")}). ${memoria}`;
 }
 
 function analizarEvaluaciones(evaluaciones) {
   if (!evaluaciones.length) return SIN_DATOS;
-  const peor = evaluaciones.reduce((m, e) => (e.r2_entrenamiento < m.r2_entrenamiento ? e : m));
-  const ajuste = casiIguales(peor.r2_entrenamiento, 1)
-    ? `El ajuste es alto en todos los algoritmos (R² mínimo ${fmt(peor.r2_entrenamiento, 3)}).`
-    : `El ajuste más flojo es el de ${peor.algoritmo} (R² ${fmt(peor.r2_entrenamiento, 3)}).`;
-  const formas = evaluaciones.map((e) => {
+  const ponderadas = comparables(evaluaciones);
+  const base = evaluaciones.find((e) => e.algoritmo === SIN_PESOS);
+  const crecimientoDe = (e) => {
     const suma = e.exponente_nodos + e.exponente_aristas;
-    const forma = casiIguales(suma, 1) ? "casi lineal" : suma > 1 ? "más que lineal" : "menos que lineal";
-    return `${e.algoritmo} ${fmt(suma, 2)} (${forma})`;
-  });
-  return [
-    ajuste,
-    compararMagnitud(evaluaciones, (e) => e.error_medio_pct, "Error medio en grafos nuevos", pct),
+    const forma = casiIguales(suma, 1)
+      ? "casi lineal"
+      : suma > 1
+        ? "más que lineal"
+        : "menos que lineal";
+    return `${fmt(suma, 2)} (${forma})`;
+  };
+  const peor = ponderadas.reduce((m, e) =>
+    e.r2_entrenamiento < m.r2_entrenamiento ? e : m,
+  );
+  const ajuste = casiIguales(peor.r2_entrenamiento, 1)
+    ? `El ajuste es alto en Dijkstra y A* (R² mínimo ${fmt(peor.r2_entrenamiento, 3)}).`
+    : `Entre Dijkstra y A*, el ajuste más flojo es el de ${peor.algoritmo} (R² ${fmt(peor.r2_entrenamiento, 3)}).`;
+  const formas = ponderadas.map((e) => `${e.algoritmo} ${crecimientoDe(e)}`);
+  const frases = [ajuste];
+  if (ponderadas.length > 1) {
+    frases.push(
+      compararMagnitud(
+        ponderadas,
+        (e) => e.error_medio_pct,
+        "Error medio en grafos nuevos",
+        pct,
+      ),
+    );
+  }
+  frases.push(
     `Suma de exponentes b+c, que describe el crecimiento si nodos y aristas aumentan a la vez: ${formas.join(", ")}.`,
-  ].join(" ");
+  );
+  if (base && ponderadas !== evaluaciones) {
+    frases.push(
+      `BFS ${USO_BFS}: R² ${fmt(base.r2_entrenamiento, 3)}, error medio ${pct(base.error_medio_pct)} y suma de exponentes ${crecimientoDe(base)}.`,
+    );
+  }
+  return frases.join(" ");
 }
 
 function analizarPruebasIa(pruebas, s) {
   if (!pruebas.length) return SIN_DATOS;
-  const peor = mayorResultado(pruebas, "error_pct");
-  const sobre = pruebas.filter((p) => p.predicho_ms > p.medido_ms).length;
-  const sesgo = casiIguales(sobre, pruebas.length - sobre)
+  const considerar = comparables(pruebas);
+  const peor = mayorResultado(considerar, "error_pct");
+  const sobre = considerar.filter((p) => p.predicho_ms > p.medido_ms).length;
+  const sesgo = casiIguales(sobre, considerar.length - sobre)
     ? "no muestra un sesgo claro entre sobreestimar y subestimar"
-    : sobre > pruebas.length - sobre ? `tiende a sobreestimar (${sobre} de ${pruebas.length})` : `tiende a subestimar (${pruebas.length - sobre} de ${pruebas.length})`;
+    : sobre > considerar.length - sobre
+      ? `tiende a sobreestimar (${sobre} de ${considerar.length})`
+      : `tiende a subestimar (${considerar.length - sobre} de ${considerar.length})`;
   const diferencia = s.aciertos_modelo - s.aciertos_regla_fija;
-  const eleccion = diferencia === 0
-    ? "iguala a la regla fija"
-    : diferencia > 0 ? "supera a la regla fija" : "queda por debajo de la regla fija";
+  const eleccion =
+    diferencia === 0
+      ? "iguala a la regla fija"
+      : diferencia > 0
+        ? "supera a la regla fija"
+        : "queda por debajo de la regla fija";
   return `El mayor error fue ${pct(peor.error_pct)} (${peor.algoritmo}, ${MIL(peor.nodos)} nodos) y el modelo ${sesgo}. Eligiendo el algoritmo correcto acertó ${s.aciertos_modelo} de ${s.grafos} grafos frente a ${s.aciertos_regla_fija} de la regla fija (${s.regla_fija}): ${eleccion}.`;
 }
 
 function analizarRecomendacion(r) {
-  const filas = Object.entries(r.predicciones_ms).map(([algoritmo, tiempo]) => ({ algoritmo, tiempo }));
+  const filas = Object.entries(r.predicciones_ms).map(
+    ([algoritmo, tiempo]) => ({ algoritmo, tiempo }),
+  );
   const parecidos = conMenor(filas, (f) => f.tiempo).filas;
-  const lectura = parecidos.length > 1
-    ? `${listar(parecidos.map((f) => f.algoritmo))} tienen predicciones similares: la recomendación de ${r.algoritmo} se apoya en una diferencia mínima.`
-    : `${r.algoritmo} es el de menor tiempo predicho.`;
+  const lectura =
+    parecidos.length > 1
+      ? `${listar(parecidos.map((f) => f.algoritmo))} tienen predicciones similares: la recomendación de ${r.algoritmo} se apoya en una diferencia mínima.`
+      : `${r.algoritmo} es el de menor tiempo predicho.`;
   return `${lectura} ${r.advertencias.join(" ")}`.trim();
 }
 
@@ -400,7 +544,8 @@ function analizarEntrenamiento(d) {
 function analizarPrecision(d) {
   if (!d.filas.length) return avisoEntrenado(d) + SIN_DATOS;
   const lecturas = d.filas.map((f) => {
-    if (casiIguales(f.error_medio_pct, f.error_referencia_pct)) return `${f.algoritmo}: el modelo no mejora la referencia (${pct(f.error_medio_pct)})`;
+    if (casiIguales(f.error_medio_pct, f.error_referencia_pct))
+      return `${f.algoritmo}: el modelo no mejora la referencia (${pct(f.error_medio_pct)})`;
     return f.error_medio_pct < f.error_referencia_pct
       ? `${f.algoritmo}: el modelo baja el error de ${pct(f.error_referencia_pct)} a ${pct(f.error_medio_pct)}`
       : `${f.algoritmo}: el modelo es peor que la referencia (${pct(f.error_medio_pct)} frente a ${pct(f.error_referencia_pct)})`;
@@ -413,24 +558,33 @@ function analizarLatencia(d) {
   const relacion = casiIguales(razon, 1)
     ? "cuesta lo mismo"
     : `cuesta ${fmt(razon, 1)} veces ${razon > 1 ? "más" : "menos"}`;
-  const escala = Math.max(d.prediccion_us, d.recomendacion_us) < 1000
-    ? "Ambas tardan menos de 1 ms."
-    : "Alguna de las dos supera 1 ms.";
+  const escala =
+    Math.max(d.prediccion_us, d.recomendacion_us) < 1000
+      ? "Ambas tardan menos de 1 ms."
+      : "Alguna de las dos supera 1 ms.";
   return `${avisoEntrenado(d)}Una predicción tarda ${fmt(d.prediccion_us, 0)} µs y una recomendación ${relacion} que una predicción, porque evalúa varios algoritmos. ${escala} El pico de memoria es de ${enKb(d.memoria_kb)}.`;
 }
 
 function analizarComparacion(d) {
   if (!d.filas.length) return avisoEntrenado(d) + SIN_DATOS;
   const filas = [...d.filas].sort((a, b) => a.nodos - b.nodos);
-  const claras = filas.filter((f) => f.veces_mas_rapida > 1 && !casiIguales(f.veces_mas_rapida, 1));
-  const rango = (campo) => `${fmt(Math.min(...filas.map((f) => f[campo])), 1)} a ${fmt(Math.max(...filas.map((f) => f[campo])), 1)}`;
+  const claras = filas.filter(
+    (f) => f.veces_mas_rapida > 1 && !casiIguales(f.veces_mas_rapida, 1),
+  );
+  const rango = (campo) =>
+    `${fmt(Math.min(...filas.map((f) => f[campo])), 1)} a ${fmt(Math.max(...filas.map((f) => f[campo])), 1)}`;
   let rapidez;
-  if (claras.length === filas.length) rapidez = `Predecir fue más rápido que ejecutar Dijkstra en todos los tamaños (${rango("veces_mas_rapida")} veces).`;
-  else if (!claras.length) rapidez = "Predecir no fue más rápido que ejecutar Dijkstra en ningún tamaño medido.";
-  else rapidez = `Predecir fue más rápido en ${claras.length} de ${filas.length} tamaños, desde ${MIL(claras[0].nodos)} nodos.`;
-  const amortizacion = d.estimaciones_para_amortizar === null
-    ? "Con estas mediciones el entrenamiento no llega a amortizarse."
-    : `Entrenar (${fmt(d.costo_entrenamiento_ms / 1000, 1)} s) se amortiza tras unas ${MIL(d.estimaciones_para_amortizar)} estimaciones.`;
+  if (claras.length === filas.length)
+    rapidez = `Predecir fue más rápido que ejecutar Dijkstra en todos los tamaños (${rango("veces_mas_rapida")} veces).`;
+  else if (!claras.length)
+    rapidez =
+      "Predecir no fue más rápido que ejecutar Dijkstra en ningún tamaño medido.";
+  else
+    rapidez = `Predecir fue más rápido en ${claras.length} de ${filas.length} tamaños, desde ${MIL(claras[0].nodos)} nodos.`;
+  const amortizacion =
+    d.estimaciones_para_amortizar === null
+      ? "Con estas mediciones el entrenamiento no llega a amortizarse."
+      : `Entrenar (${fmt(d.costo_entrenamiento_ms / 1000, 1)} s) se amortiza tras unas ${MIL(d.estimaciones_para_amortizar)} estimaciones.`;
   return `${avisoEntrenado(d)}${rapidez} El error de la predicción va de ${rango("error_pct")} %. ${amortizacion}`;
 }
 
@@ -531,9 +685,7 @@ function tarjetaBenchmark(nodos, filas) {
 }
 
 const ejecutarBenchmark = enlazar("benchmark", (filas) => {
-  const grupos = [...new Set(filas.map((f) => f.nodos))].sort(
-    (a, b) => a - b,
-  );
+  const grupos = [...new Set(filas.map((f) => f.nodos))].sort((a, b) => a - b);
 
   el("resultados-benchmark").innerHTML = grupos
     .map((n) =>
@@ -666,7 +818,9 @@ async function prepararSnakeviz(algoritmos) {
 
 const ejecutarPerfilado = enlazar("perfilado", ({ cpu, memoria }, ahora) => {
   if (ahora) void prepararSnakeviz(Object.keys(cpu));
-  else el("estado-snakeviz").textContent = "SnakeViz se inicia al ejecutar el perfilado.";
+  else
+    el("estado-snakeviz").textContent =
+      "SnakeViz se inicia al ejecutar el perfilado.";
 
   const nombres = { BFS: "BFS", Dijkstra: "Dijkstra", "A*": "A*" };
 
@@ -832,7 +986,13 @@ enlazar("escalabilidad", ({ filas, grafos }) => {
   const aVeces = (n) => ({ t: fmt(n, 2) + " ×", n: true });
   llenarTabla(
     el("tabla-descomposicion").querySelector("tbody"),
-    cambios.map((c) => [c.algoritmo, aVeces(c.tiempo), aVeces(c.explorados), aVeces(c.costo), aVeces(c.esperado)]),
+    cambios.map((c) => [
+      c.algoritmo,
+      aVeces(c.tiempo),
+      aVeces(c.explorados),
+      aVeces(c.costo),
+      aVeces(c.esperado),
+    ]),
   );
 
   llenarTabla(
@@ -914,11 +1074,12 @@ const ejecutarScalene = enlazar("scalene", (resultado) => {
 });
 
 enlazar("prediccion", (datos) => {
-  const mejor = mejorResultado(datos.evaluaciones, "error_medio_pct");
+  const comparadas = comparables(datos.evaluaciones);
+  const mejor = mejorResultado(comparadas, "error_medio_pct");
 
   el("resumen-prediccion").innerHTML =
     `<div class="ficha"><b>${datos.entrenamiento}</b> muestras de entrenamiento</div>` +
-    `<div class="ficha"><b>${fmt(Math.min(...datos.evaluaciones.map((e) => e.r2_entrenamiento)), 3)}</b> R² mínimo</div>` +
+    `<div class="ficha"><b>${fmt(Math.min(...comparadas.map((e) => e.r2_entrenamiento)), 3)}</b> R² mínimo (Dijkstra y A*)</div>` +
     (mejor
       ? `<div class="ficha"><b>${fmt(mejor.error_medio_pct, 1)} %</b> menor error medio (${esc(mejor.algoritmo)})</div>`
       : "");
@@ -946,8 +1107,14 @@ enlazar("prediccion", (datos) => {
     ]),
   );
 
-  interpretar("analisis-evaluaciones", analizarEvaluaciones(datos.evaluaciones));
-  interpretar("texto-seleccion", analizarPruebasIa(datos.pruebas, datos.seleccion));
+  interpretar(
+    "analisis-evaluaciones",
+    analizarEvaluaciones(datos.evaluaciones),
+  );
+  interpretar(
+    "texto-seleccion",
+    analizarPruebasIa(datos.pruebas, datos.seleccion),
+  );
 });
 
 /** Muestra la recomendación de una consulta (nueva o restaurada). */
@@ -993,7 +1160,9 @@ if (recomendacionGuardada?.datos?.r) {
     el("ia-nodos").value = consulta.nodos;
     el("ia-aristas").value = consulta.aristas;
     el("ia-ponderado").checked = consulta.ponderado;
-    el("estado-recomendar").textContent = etiquetaResultadoGuardado(recomendacionGuardada);
+    el("estado-recomendar").textContent = etiquetaResultadoGuardado(
+      recomendacionGuardada,
+    );
   } catch (_) {
     guardarResultado("analisis:recomendar", null); // formato antiguo o inválido
   }
