@@ -20,5 +20,4 @@ napoleon_custom_sections = [("Atributos", "params_style")]
 autodoc_member_order = "bysource"
 autodoc_typehints = "description"
 html_theme = "furo"
-html_static_path = ["_static"]
 exclude_patterns = ["_build"]
