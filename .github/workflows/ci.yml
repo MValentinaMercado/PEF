@@ -94,7 +94,7 @@ jobs:
 
       - name: Guardar evidencias
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: evidencias-estatica
           retention-days: 14
@@ -150,7 +150,7 @@ jobs:
 
       - name: Guardar evidencias
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: evidencias-pruebas
           retention-days: 14
@@ -213,7 +213,7 @@ jobs:
 
       - name: Guardar evidencias
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: evidencias-seguridad-docs
           retention-days: 14
@@ -276,7 +276,7 @@ jobs:
 
       - name: Guardar evidencias
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: evidencias-rendimiento
           retention-days: 14
